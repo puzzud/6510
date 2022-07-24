@@ -99,6 +99,8 @@ class EMCScreen : public CVICHWScreen {
     public:
 };
 
+EMCScreen* emcScreen_ = NULL;
+
 
 void runloop() {
     int target_cycles = 1023000; //NTSC
@@ -135,15 +137,22 @@ void uiloop() {
             if (m < 128) {
                 c = CMOS6569TextMap[m]; 
             }
-            std::cout << c;
+            //std::cout << c;
         }
-        std::cout << std::endl;
+        //std::cout << std::endl;
     }
     std::cout << "\u001b[0m" << std::endl;
 
+    /*
     int64_t elapsed = now()-start;
     if (elapsed > 0) {
         std::cout << "cycles " << 1000*(total_cycles/(now()-start)) << "/sec" << std::endl;
+    }
+    */
+    if (emcScreen_ != NULL)
+    {
+        int backgroundColor = emcScreen_->GetBackgroundColor();
+        std::cout << "Background Color: " << backgroundColor << std::endl;
     }
 }
 
@@ -192,8 +201,6 @@ const std::vector<char> KEYUP = { 27, 91, 65 };
 const std::vector<char> KEYDOWN = { 27, 91, 66 }; 
 const std::vector<char> KEYLEFT = { 27, 91, 68 }; 
 const std::vector<char> KEYRIGHT = { 27, 91, 67 }; 
-
-EMCScreen* emcScreen_ = NULL;
 
 bool isKeystroke(std::vector<char>& keystroke, const std::vector<char>& k) {
     if (k.size() != keystroke.size()) {

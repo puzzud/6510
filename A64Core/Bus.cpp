@@ -171,10 +171,13 @@ u8 CBus::Peek(u16 address){
 
 
 void CBus::Poke(u16 address, u8 m){
+	int address_range_index = -1;
+
 	switch(mMemoryMode){
 		case eBusModeProcesor:
 			
 			if(address == 0x0000 || address == 0x0001){
+				address_range_index = 0;
 			}
 			if(address == 0x0001){
 				//IO Port
@@ -192,20 +195,27 @@ void CBus::Poke(u16 address, u8 m){
 					
 					mRam.device->Poke(1,m);
 					
+					address_range_index = 1;
 				}
 
 			}else if(address >= mIO.fromAddress && address <= mIO.toAddress){
 				 mIO.device->Poke(address,m);
+				 address_range_index = 2;
 			}else if(address >= mVic.fromAddress && address <= mVic.toAddress){
 				 mVic.device->Poke(address,m);
+				 address_range_index = 3;
 			}else if(address >= mBasicRom.fromAddress && address <= mBasicRom.toAddress){
 				 mBasicRom.device->Poke(address,m);
+				 address_range_index = 4;
 			}else if(address >= mKernalRom.fromAddress && address <= mKernalRom.toAddress){
 				 mKernalRom.device->Poke(address,m);
+				 address_range_index = 5;
 			}else if(address >= mCia1.fromAddress && address <= mCia1.toAddress){
 				 mCia1.device->Poke(address,m);
+				 address_range_index = 6;
 			}else if(address >= mRam.fromAddress && address <= mRam.toAddress){
 				 mRam.device->Poke(address,m);
+				 address_range_index = 7;
 			}else{
 				cout << "Error 822" << endl;
 			}
@@ -215,6 +225,12 @@ void CBus::Poke(u16 address, u8 m){
 			mRam.device->Poke(address, m);
 			break;
 		}
+	
+	// TODO: Poke memory watch.
+	if (address == 53281)
+	{
+		cout << "53281" << ": " << int(m) << ":" << mMemoryMode << ":" << address_range_index << endl;
+	}
 }
 
 
