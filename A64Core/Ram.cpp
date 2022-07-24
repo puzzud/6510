@@ -74,3 +74,26 @@ int CRam::LoadApp(char* fname){
 
 	return 0;
 }
+
+int CRam::LoadBinary(char* fname, u16 address){
+	u8* m = mRam + address;
+	ifstream file(fname, ios::in|ios::binary|ios::ate);
+	if (!file.is_open()){
+		cout << "Could not load file : " << fname << endl;
+		return -1;
+	}
+
+	file.seekg (0, ios::beg);
+	
+	int fsize = file.gcount();
+	if (address + fsize - 1 > 0xFFFF){
+		file.close();
+		cout << "File too large to load : " << fname << endl;
+		return -1;
+	}
+
+	file.read((char*)m, fsize);
+	file.close();
+
+	return 0;
+}
