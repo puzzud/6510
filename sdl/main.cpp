@@ -59,6 +59,7 @@ void MainLoop(void);
 void MainLoopIteration(void);
 void OnInputEvent(SDL_Event* event);
 void OnInputKeyEvent(SDL_Event* event, unsigned int isDown);
+void OnInputTextInputEvent(SDL_Event* event);
 void InitializeColors(void);
 void SetColorValuesFromInt(SDL_Color* color, unsigned int value);
 void Draw(void);
@@ -70,9 +71,6 @@ void DrawCharacters(void);
 void DrawCharacter(unsigned int x, unsigned int y, char shapeCode, char colorCode);
 void PopulateCharacterSetSurfaceFromCharacterSet(SDL_Surface* characterSetSurface);
 void PopulateCharacterSurfaceFromCharacter(SDL_Surface* characterSurface, unsigned int characterIndex);
-
-void uiloop();
-bool isKeystroke(std::vector<char>& keystroke, const std::vector<char>& k);
 
 class HiresTimeImpl;
 class EMCScreen;
@@ -89,12 +87,6 @@ SDL_Texture* CharacterSetTexture;
 bool _run = true;
 uint64_t total_cycles = 0;
 char charbuffer[SCREEN_WIDTH * SCREEN_HEIGHT];
-
-const std::vector<char> ESC = { 27 };
-const std::vector<char> KEYUP = { 27, 91, 65 }; 
-const std::vector<char> KEYDOWN = { 27, 91, 66 }; 
-const std::vector<char> KEYLEFT = { 27, 91, 68 }; 
-const std::vector<char> KEYRIGHT = { 27, 91, 67 }; 
 
 
 uint64_t now() {
@@ -184,19 +176,6 @@ void runloop() {
 }
 
 
-bool isKeystroke(std::vector<char>& keystroke, const std::vector<char>& k) {
-    if (k.size() != keystroke.size()) {
-        return false;
-    }
-    for (int x=0; x<keystroke.size(); x++) {
-        if (keystroke[x] != k[x]) {
-            return false;
-        }
-    }
-    return true;
-}
-
-
 int main(int argc, char* argv[]) {
     SDL_Init(SDL_INIT_VIDEO);
     RenderScale.x = 3;
@@ -275,6 +254,7 @@ inline void MainLoopIteration(void)
 
 			case SDL_KEYDOWN:
 			case SDL_KEYUP:
+            case SDL_TEXTINPUT:
 			case SDL_CONTROLLERAXISMOTION:
 			case SDL_CONTROLLERBUTTONDOWN:
 			case SDL_CONTROLLERBUTTONUP:
@@ -327,6 +307,13 @@ void OnInputEvent(SDL_Event* event)
 
 			break;
 		}
+
+        case SDL_TEXTINPUT:
+		{
+			OnInputTextInputEvent(event);
+
+			break;
+		}
 	}
 }
 
@@ -338,34 +325,48 @@ void OnInputKeyEvent(SDL_Event* event, unsigned int isDown)
 		{
 			if (event->key.repeat == 0)
 			{
-                int keySymbol = event->key.keysym.sym;
-                cout << "Typed: " << char(keySymbol) << " (" << int(keySymbol) << ")" << endl;
+                int keyScanCode = event->key.keysym.scancode;
 
-				//KeyCodeStates[keySymbol] = 1;
+                //int keySymbol = event->key.keysym.sym;
+                //cout << "Typed: " << int(keyScanCode) << " : " << char(keySymbol) << " (" << int(keySymbol) << ")" << endl;
 
-                std::vector<char> keystroke;
                 //https://sta.c64.org/cbm64pet.html
-                keystroke.push_back(keySymbol);
                 
-                char c = keystroke[0];
-                if (c >= 'a' && c <= 'z') {
-                    c += 'A' - 'a';
-                } else if (c == 10) {
-                    c = 13;
-                } else if (isKeystroke(keystroke, ESC)) {
-                    c = 3;
-                } else if (isKeystroke(keystroke, KEYUP)) {
-                    c = 145;
-                } else if (isKeystroke(keystroke, KEYDOWN)) {
-                    c = 17;
-                } else if (isKeystroke(keystroke, KEYLEFT)) {
-                    c = 157;
-                } else if (isKeystroke(keystroke, KEYRIGHT)) {
-                    c = 29;
-                } else if (c == 127) {
-                    c = 20;
+                int keyStroke = -1;
+
+                if (keyScanCode == SDL_SCANCODE_RETURN)
+                {
+                    keyStroke = 13;
                 }
-                cbm64->GetCia1()->AddKeyStroke(c);
+                else if (keyScanCode == SDL_SCANCODE_ESCAPE)
+                {
+                    keyStroke = 3;
+                }
+                else if (keyScanCode == SDL_SCANCODE_UP)
+                {
+                    keyStroke = 145;
+                }
+                else if (keyScanCode == SDL_SCANCODE_DOWN)
+                {
+                    keyStroke = 17;
+                }
+                else if (keyScanCode == SDL_SCANCODE_LEFT)
+                {
+                    keyStroke = 157;
+                }
+                else if (keyScanCode == SDL_SCANCODE_RIGHT)
+                {
+                    keyStroke = 29;
+                }
+                else if (keyScanCode == SDL_SCANCODE_BACKSPACE)
+                {
+                    keyStroke = 20;
+                }
+
+                if (keyStroke > -1)
+                {
+                    cbm64->GetCia1()->AddKeyStroke(char(keyStroke));
+                }
 			}
 
 			break;
@@ -375,12 +376,27 @@ void OnInputKeyEvent(SDL_Event* event, unsigned int isDown)
 		{
 			if (event->key.repeat == 0)
 			{
-				//KeyCodeStates[event->key.keysym.scancode] = 0;
+				
 			}
 
 			break;
 		}
 	}
+}
+
+void OnInputTextInputEvent(SDL_Event* event)
+{
+    char keySymbol = event->text.text[0];
+    //cout << "Text Input: " << char(keySymbol) << endl;
+
+    char keyStroke = keySymbol;
+
+    if (keySymbol >= 'a' && keySymbol <= 'z')
+    {
+        keyStroke = keySymbol + 'A' - 'a';
+    }
+
+    cbm64->GetCia1()->AddKeyStroke(char(keyStroke));
 }
 
 void InitializeColors(void)
