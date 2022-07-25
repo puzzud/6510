@@ -45,6 +45,7 @@ class CMOS6569 : public CDevice{
 	private:
 		CVICHWScreen* mRenderer;
 		u8 mVideoMem[0x0800-0x0400];
+		u8 mColorRam[0xDBE7-0xD800];
 		u8 mScreenBufPixel[ (VICRES_X /8) * VICRES_Y + VICRES_X ];
 		CBus* mBus;	
 	protected:

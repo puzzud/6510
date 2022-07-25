@@ -528,6 +528,8 @@ void ShutdownCharacterSet(void)
 
 void DrawCharacters(void)
 {
+    auto vic = cbm64->GetVic();
+
 	char shapeCode;
 	char colorCode;
 
@@ -539,10 +541,11 @@ void DrawCharacters(void)
 		for (columnIndex = 0; columnIndex < SCREEN_CHAR_WIDTH; ++columnIndex)
 		{
             //shapeCode = charbuffer[(rowIndex * SCREEN_CHAR_WIDTH) + columnIndex];
-            shapeCode = cbm64->GetVic()->Peek((rowIndex * SCREEN_CHAR_WIDTH) + columnIndex + 0x0400);
+            int characterPosition = (rowIndex * SCREEN_CHAR_WIDTH) + columnIndex;
+            shapeCode = vic->Peek(0x0400 + characterPosition);
 			if (shapeCode != 32)
 			{
-				colorCode = COLOR_LIGHT_BLUE; // TODO: Pull from color RAM?
+                colorCode = vic->Peek(0xD800 + characterPosition) & 0x0F;
 				DrawCharacter(columnIndex * CHARACTER_WIDTH, rowIndex * CHARACTER_HEIGHT, shapeCode, colorCode);
 			}
 		}
