@@ -72,8 +72,6 @@ void PopulateCharacterSetSurfaceFromCharacterSet(SDL_Surface* characterSetSurfac
 void PopulateCharacterSurfaceFromCharacter(SDL_Surface* characterSurface, unsigned int characterIndex);
 
 void uiloop();
-static int getch_lower_(int block);
-std::vector<char> getKeystroke();
 bool isKeystroke(std::vector<char>& keystroke, const std::vector<char>& k);
 
 class HiresTimeImpl;
@@ -91,16 +89,6 @@ SDL_Texture* CharacterSetTexture;
 bool _run = true;
 uint64_t total_cycles = 0;
 char charbuffer[SCREEN_WIDTH * SCREEN_HEIGHT];
-
-static char CMOS6569TextMap[128] = 
-{    '@','A','B','C','D','E','F','G','H','I','J','K','L','M','N','O',
-    'P','Q','R','S','T','U','V','W','X','Y','Z','[','x',']','^','x',
-    ' ','!','"','#','$','%','&','\'','(',')','*','+',',','-','.','/',
-    '0','1','2','3','4','5','6','7','8','9',':',';','<','=','>','?',
-    'x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x',
-    'x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x',
-    ' ','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x',
-    'x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x' };
 
 const std::vector<char> ESC = { 27 };
 const std::vector<char> KEYUP = { 27, 91, 65 }; 
@@ -192,78 +180,7 @@ void runloop() {
                 break;
             }
         }
-
-        /*
-        printf("\e[?25l"); //cursor off
-        uiloop();
-        //usleep(100000);
-        printf("\e[?25h"); //cursor on
-        */
     }
-}
-
-
-void uiloop() {
-    std::cout << "\033[0;0H" << std::endl; 
-    std::cout << "\u001b[44m" << std::endl; 
-    for (int y=0;y<25;y++) {
-        for (int x=0;x<40;x++) {
-            uint8_t m = charbuffer[y*40+x];
-            char c = '_';
-            if (m < 128) {
-                c = CMOS6569TextMap[m]; 
-            }
-            std::cout << c;
-        }
-        std::cout << std::endl;
-    }
-    std::cout << "\u001b[0m" << std::endl;
-
-    if (emcScreen_ != NULL)
-    {
-        int backgroundColor = emcScreen_->GetBackgroundColor();
-        std::cout << "Background Color: " << backgroundColor << std::endl;
-    }
-}
-
-
-//https://stackoverflow.com/questions/36428098/c-how-to-check-if-my-input-bufferstdin-is-empty
-static int getch_lower_(int block)
-{
-    struct termios tc = {};
-    int status;
-    char rdbuf;
-    // retrieve initial settings.
-    if (tcgetattr(STDIN_FILENO, &tc) < 0)
-        perror("tcgetattr()");
-    // non-canonical mode; no echo.
-    tc.c_lflag &= ~(ICANON | ECHO);
-    tc.c_cc[VMIN] = block ? 1 : 0; // bytes until read unblocks.
-    tc.c_cc[VTIME] = 0; // timeout.
-    if (tcsetattr(STDIN_FILENO, TCSANOW, &tc) < 0)
-        perror("tcsetattr()");
-    // read char.
-    if ((status = read(STDIN_FILENO, &rdbuf, 1)) < 0)
-        perror("read()");
-    // restore initial settings.
-    tc.c_lflag |= (ICANON | ECHO);
-    if (tcsetattr(STDIN_FILENO, TCSADRAIN, &tc) < 0)
-        perror("tcsetattr()");
-    return (status > 0) ? rdbuf : EOF;
-}
-
-
-std::vector<char> getKeystroke() {
-    std::vector<char> keystroke;
-    int cc = getch_lower_(1);
-    keystroke.push_back(cc);
-    while (cc != -1) {
-        cc = getch_lower_(0);
-        if (cc != -1) {
-            keystroke.push_back(cc);
-        }
-    }
-    return keystroke;
 }
 
 
@@ -311,11 +228,8 @@ int main(int argc, char* argv[]) {
     CMOS6569* vic = cbm64->GetVic();
     unsigned char* screenBuffer = vic->RegisterHWScreen(emcScreen_);
 
-    std::cout << "\033c" << std::endl;
-
     MainLoop();
-
-    std::cout << "press a key to end..." << std::endl;
+    
     std::cout << "ended..." << std::endl;
 
     ShutdownCharacterSet();
@@ -424,12 +338,14 @@ void OnInputKeyEvent(SDL_Event* event, unsigned int isDown)
 		{
 			if (event->key.repeat == 0)
 			{
-				//KeyCodeStates[event->key.keysym.scancode] = 1;
+                int keySymbol = event->key.keysym.sym;
+                cout << "Typed: " << char(keySymbol) << " (" << int(keySymbol) << ")" << endl;
 
-                std::vector<char> keystroke;// = getKeystroke();
+				//KeyCodeStates[keySymbol] = 1;
+
+                std::vector<char> keystroke;
                 //https://sta.c64.org/cbm64pet.html
-                cout << "Typed: " << char(event->key.keysym.sym) << "(" << int(event->key.keysym.sym) << ")" << endl;
-                keystroke.push_back(event->key.keysym.sym);
+                keystroke.push_back(keySymbol);
                 
                 char c = keystroke[0];
                 if (c >= 'a' && c <= 'z') {
@@ -606,7 +522,8 @@ void DrawCharacters(void)
 	{
 		for (columnIndex = 0; columnIndex < SCREEN_CHAR_WIDTH; ++columnIndex)
 		{
-            shapeCode = charbuffer[(rowIndex * SCREEN_CHAR_WIDTH) + columnIndex];
+            //shapeCode = charbuffer[(rowIndex * SCREEN_CHAR_WIDTH) + columnIndex];
+            shapeCode = cbm64->GetVic()->Peek((rowIndex * SCREEN_CHAR_WIDTH) + columnIndex + 0x0400);
 			if (shapeCode != 32)
 			{
 				colorCode = COLOR_LIGHT_BLUE; // TODO: Pull from color RAM?
