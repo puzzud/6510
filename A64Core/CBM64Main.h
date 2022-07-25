@@ -46,6 +46,7 @@ class CBM64Main{
 		
 		CMOS6569* GetVic();
 		CMOS6526A* GetCia1();
+		CCharRom* GetCharRom();
 
 		int LoadApp(char* fname);
 		int LoadBasic(char* fname);

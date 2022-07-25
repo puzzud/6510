@@ -22,6 +22,16 @@
 #define FRAMES_PER_SECOND	60
 #define USE_PERFORMANCE_COUNTER 1
 
+#define SCREEN_WIDTH 320
+#define SCREEN_HEIGHT 200
+
+#define CHARACTER_WIDTH 8
+#define CHARACTER_HEIGHT 8
+#define NUMBER_OF_CHARACTERS 256
+
+#define SCREEN_CHAR_WIDTH (SCREEN_WIDTH / CHARACTER_WIDTH)
+#define SCREEN_CHAR_HEIGHT (SCREEN_HEIGHT / CHARACTER_HEIGHT)
+
 typedef enum
 {
 	COLOR_BLACK,
@@ -49,11 +59,17 @@ void MainLoop(void);
 void MainLoopIteration(void);
 void OnInputEvent(SDL_Event* event);
 void OnInputKeyEvent(SDL_Event* event, unsigned int isDown);
+void InitializeColors(void);
+void SetColorValuesFromInt(SDL_Color* color, unsigned int value);
 void Draw(void);
 void ClearScreen(void);
 void DrawRectangle(unsigned int x, unsigned int y, unsigned int width, unsigned int height, char colorCode);
-void InitializeColors(void);
-void SetColorValuesFromInt(SDL_Color* color, unsigned int value);
+void InitializeCharacterSet(void);
+void ShutdownCharacterSet(void);
+void DrawCharacters(void);
+void DrawCharacter(unsigned int x, unsigned int y, char shapeCode, char colorCode);
+void PopulateCharacterSetSurfaceFromCharacterSet(SDL_Surface* characterSetSurface);
+void PopulateCharacterSurfaceFromCharacter(SDL_Surface* characterSurface, unsigned int characterIndex);
 
 void uiloop();
 static int getch_lower_(int block);
@@ -70,10 +86,11 @@ SDL_Window* Window;
 SDL_Renderer* Renderer;
 SDL_Point RenderScale;
 SDL_Color Colors[NUMBER_OF_COLORS];
+SDL_Texture* CharacterSetTexture;
 
 bool _run = true;
 uint64_t total_cycles = 0;
-char charbuffer[320*200];
+char charbuffer[SCREEN_WIDTH * SCREEN_HEIGHT];
 
 static char CMOS6569TextMap[128] = 
 {    '@','A','B','C','D','E','F','G','H','I','J','K','L','M','N','O',
@@ -129,7 +146,7 @@ class EMCScreen : public CVICHWScreen {
             activescreen_ = new std::atomic<int>();
             *activescreen_ = 0;
             for (int i=0; i<2; i++) {
-                screenbuffer_[i] = (uint8_t*)calloc(320*200, sizeof(uint8_t));
+                screenbuffer_[i] = (uint8_t*)calloc(SCREEN_WIDTH * SCREEN_HEIGHT, sizeof(uint8_t));
             }
         }
         ~EMCScreen() {
@@ -148,7 +165,7 @@ class EMCScreen : public CVICHWScreen {
         }
         int cnt_ = 0;
         void DrawChars(u8* memory) {
-            memcpy(charbuffer, memory, 320*200);
+            memcpy(charbuffer, memory, SCREEN_WIDTH * SCREEN_HEIGHT);
         }
     public:
 };
@@ -271,17 +288,19 @@ int main(int argc, char* argv[]) {
 		(
 			"6510",
 			SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED,
-			320*RenderScale.x, 200*RenderScale.y,
+			SCREEN_WIDTH * RenderScale.x, SCREEN_HEIGHT * RenderScale.y,
 			SDL_WINDOW_SHOWN | SDL_WINDOW_RESIZABLE
 		);
     Renderer = SDL_CreateRenderer(Window, -1, SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC);
     SDL_RenderSetScale(Renderer, (float)RenderScale.x, (float)RenderScale.y);
-	SDL_RenderSetLogicalSize(Renderer, 320, 200);
+	SDL_RenderSetLogicalSize(Renderer, SCREEN_WIDTH, SCREEN_HEIGHT);
 
     InitializeColors();
-
+    
     cbm64 = new CBM64Main();
     cbm64->Init();
+
+    InitializeCharacterSet();
 
     //Set the hires time callbacks
     HiresTimeImpl hiresTime;
@@ -299,6 +318,7 @@ int main(int argc, char* argv[]) {
     std::cout << "press a key to end..." << std::endl;
     std::cout << "ended..." << std::endl;
 
+    ShutdownCharacterSet();
     SDL_DestroyWindow(Window);
 	SDL_DestroyRenderer(Renderer);
     SDL_Quit();
@@ -408,7 +428,7 @@ void OnInputKeyEvent(SDL_Event* event, unsigned int isDown)
 
                 std::vector<char> keystroke;// = getKeystroke();
                 //https://sta.c64.org/cbm64pet.html
-                cout << "Typed: " << event->key.keysym.sym << endl;
+                cout << "Typed: " << char(event->key.keysym.sym) << "(" << int(event->key.keysym.sym) << ")" << endl;
                 keystroke.push_back(event->key.keysym.sym);
                 
                 char c = keystroke[0];
@@ -445,66 +465,6 @@ void OnInputKeyEvent(SDL_Event* event, unsigned int isDown)
 			break;
 		}
 	}
-}
-
-SDL_Surface* CreateSurface(unsigned int width, unsigned int height)
-{
-	Uint32 rmask, gmask, bmask, amask;
-
-	// SDL interprets each pixel as a 32-bit number,
-	// so our masks must depend on the endianness (byte order) of the machine.
-#if SDL_BYTEORDER == SDL_BIG_ENDIAN
-	rmask = 0xff000000;
-	gmask = 0x00ff0000;
-	bmask = 0x0000ff00;
-	amask = 0x000000ff;
-#else
-	rmask = 0x000000ff;
-	gmask = 0x0000ff00;
-	bmask = 0x00ff0000;
-	amask = 0xff000000;
-#endif
-
-	return SDL_CreateRGBSurface
-		(
-			0,
-			width, height,
-			32,
-			rmask, gmask, bmask, amask
-		);
-}
-
-void Draw(void)
-{
-	ClearScreen();
-
-	//DrawTileMap();
-	//DrawSprites();
-
-	SDL_RenderPresent(Renderer);
-}
-
-void ClearScreen(void)
-{
-	SDL_Color* backgroundColor = &Colors[emcScreen_->GetBackgroundColor()];
-
-	SDL_SetRenderDrawColor(Renderer, backgroundColor->r, backgroundColor->g, backgroundColor->b, 0xff);
-	SDL_RenderClear(Renderer);
-}
-
-void DrawRectangle(unsigned int x, unsigned int y, unsigned int width, unsigned int height, char colorCode)
-{
-	SDL_Color* color = &Colors[colorCode];
-
-	SDL_Rect rect;
-	rect.x = x;
-	rect.y = y;
-	rect.w = width;
-	rect.h = height;
-
-	SDL_SetRenderDrawColor(Renderer, color->r, color->g, color->b, color->a);
-	
-	SDL_RenderFillRect(Renderer, &rect);
 }
 
 void InitializeColors(void)
@@ -550,4 +510,206 @@ void SetColorValuesFromInt(SDL_Color* color, unsigned int value)
 	color->g = (value >> 8) & 0xff;
 	color->b = value & 0xff;
 	color->a = 0xff;
+}
+
+SDL_Surface* CreateSurface(unsigned int width, unsigned int height)
+{
+	Uint32 rmask, gmask, bmask, amask;
+
+	// SDL interprets each pixel as a 32-bit number,
+	// so our masks must depend on the endianness (byte order) of the machine.
+#if SDL_BYTEORDER == SDL_BIG_ENDIAN
+	rmask = 0xff000000;
+	gmask = 0x00ff0000;
+	bmask = 0x0000ff00;
+	amask = 0x000000ff;
+#else
+	rmask = 0x000000ff;
+	gmask = 0x0000ff00;
+	bmask = 0x00ff0000;
+	amask = 0xff000000;
+#endif
+
+	return SDL_CreateRGBSurface
+		(
+			0,
+			width, height,
+			32,
+			rmask, gmask, bmask, amask
+		);
+}
+
+void Draw(void)
+{
+	ClearScreen();
+
+	DrawCharacters();
+	//DrawSprites();
+
+	SDL_RenderPresent(Renderer);
+}
+
+void ClearScreen(void)
+{
+	SDL_Color* backgroundColor = &Colors[emcScreen_->GetBackgroundColor()];
+
+	SDL_SetRenderDrawColor(Renderer, backgroundColor->r, backgroundColor->g, backgroundColor->b, 0xff);
+	SDL_RenderClear(Renderer);
+}
+
+void DrawRectangle(unsigned int x, unsigned int y, unsigned int width, unsigned int height, char colorCode)
+{
+	SDL_Color* color = &Colors[colorCode];
+
+	SDL_Rect rect;
+	rect.x = x;
+	rect.y = y;
+	rect.w = width;
+	rect.h = height;
+
+	SDL_SetRenderDrawColor(Renderer, color->r, color->g, color->b, color->a);
+	
+	SDL_RenderFillRect(Renderer, &rect);
+}
+
+void InitializeCharacterSet(void)
+{
+	SDL_Surface* characterSetSurface = CreateSurface(CHARACTER_WIDTH, NUMBER_OF_CHARACTERS * CHARACTER_HEIGHT);
+	if (characterSetSurface == NULL)
+	{
+		// TODO: Generate error.
+		return;
+	}
+
+	PopulateCharacterSetSurfaceFromCharacterSet(characterSetSurface);
+
+	CharacterSetTexture = SDL_CreateTextureFromSurface(Renderer, characterSetSurface);
+
+	SDL_FreeSurface(characterSetSurface);
+	characterSetSurface = NULL;
+}
+
+void ShutdownCharacterSet(void)
+{
+	SDL_DestroyTexture(CharacterSetTexture);
+}
+
+void DrawCharacters(void)
+{
+	char shapeCode;
+	char colorCode;
+
+	unsigned int columnIndex;
+	unsigned int rowIndex;
+
+	for (rowIndex = 0; rowIndex < SCREEN_CHAR_HEIGHT; ++rowIndex)
+	{
+		for (columnIndex = 0; columnIndex < SCREEN_CHAR_WIDTH; ++columnIndex)
+		{
+            shapeCode = charbuffer[(rowIndex * SCREEN_CHAR_WIDTH) + columnIndex];
+			if (shapeCode != 32)
+			{
+				colorCode = COLOR_LIGHT_BLUE; // TODO: Pull from color RAM?
+				DrawCharacter(columnIndex * CHARACTER_WIDTH, rowIndex * CHARACTER_HEIGHT, shapeCode, colorCode);
+			}
+		}
+	}
+}
+
+void PopulateCharacterSetSurfaceFromCharacterSet(SDL_Surface* characterSetSurface)
+{
+	unsigned int characterIndex;
+
+	SDL_Rect characterDestinationRect;
+	
+	SDL_Surface* characterSurface = CreateSurface(CHARACTER_WIDTH, CHARACTER_HEIGHT);
+	if (characterSurface == NULL)
+	{
+		// TODO: Generate error.
+		return;
+	}
+
+	characterDestinationRect.w = CHARACTER_WIDTH;
+	characterDestinationRect.h = CHARACTER_HEIGHT;
+
+	// Initial destination location for the first character graphic.
+	characterDestinationRect.x = 0;
+	characterDestinationRect.y = 0;
+
+	for (characterIndex = 0; characterIndex < NUMBER_OF_CHARACTERS; ++characterIndex)
+	{
+		PopulateCharacterSurfaceFromCharacter(characterSurface, characterIndex);
+
+		// Copy it over.
+		SDL_BlitSurface
+			(
+				characterSurface,
+				NULL,
+				characterSetSurface,
+				&characterDestinationRect
+			);
+		
+		// Determine destination location for next character graphic.
+		characterDestinationRect.y += CHARACTER_HEIGHT;
+	}
+
+	SDL_FreeSurface(characterSurface);
+	characterSurface = NULL;
+}
+
+void PopulateCharacterSurfaceFromCharacter(SDL_Surface* characterSurface, unsigned int characterIndex)
+{
+	unsigned int x, y;
+	char colorCode;
+	unsigned int* pixels;
+
+	if (SDL_MUSTLOCK(characterSurface))
+	{
+		SDL_LockSurface(characterSurface);
+	}
+
+	pixels = (unsigned int*)characterSurface->pixels;
+
+	for (y = 0; y < CHARACTER_HEIGHT; ++y)
+	{
+		for (x = 0; x < CHARACTER_WIDTH; ++x)
+		{
+            int charRomCharOffset = characterIndex * CHARACTER_HEIGHT;
+            char charRowByte = cbm64->GetCharRom()->Peek(CHARROMSTART + charRomCharOffset + y);
+            colorCode = charRowByte & (1 << (CHARACTER_WIDTH - x - 1));
+
+			// TODO: Actually, check color code.
+			*((unsigned int*)pixels) = colorCode != 0 ?
+				SDL_MapRGBA(characterSurface->format, 255, 255, 255, 255) :
+				SDL_MapRGBA(characterSurface->format, 0, 0, 0, 0);
+			
+			++pixels;
+		}
+	}
+
+	if (SDL_MUSTLOCK(characterSurface))
+	{
+		SDL_UnlockSurface(characterSurface);
+	}
+}
+
+void DrawCharacter(unsigned int x, unsigned int y, char shapeCode, char colorCode)
+{
+	SDL_Color* color = &Colors[colorCode];
+
+	SDL_Rect sourceRect;
+	SDL_Rect destinationRect;
+
+	sourceRect.x = 0;
+	sourceRect.y = shapeCode * CHARACTER_HEIGHT;
+	sourceRect.w = CHARACTER_WIDTH;
+	sourceRect.h = CHARACTER_HEIGHT;
+
+	destinationRect.x = x;
+	destinationRect.y = y;
+	destinationRect.w = CHARACTER_WIDTH;
+	destinationRect.h = CHARACTER_HEIGHT;
+
+	SDL_SetTextureColorMod(CharacterSetTexture, color->r, color->g, color->b);
+	SDL_RenderCopy(Renderer, CharacterSetTexture, &sourceRect, &destinationRect);
 }

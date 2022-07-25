@@ -57,6 +57,10 @@ CMOS6526A* CBM64Main::GetCia1(){
 	return mCia1;
 }
 
+CCharRom* CBM64Main::GetCharRom(){
+	return mCharRom;
+}
+
 int CBM64Main::SetDisassemble(int d){
 	mProcessor->mDisassemble = d;
 	return mProcessor->mDisassemble;
