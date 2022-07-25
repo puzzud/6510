@@ -100,7 +100,10 @@ int CMOS6569::Poke(u16 address, u8 val){
 	else if (address >= 0xD800 && address <= 0xDBE7){
 		mColorRam[address - 0xD800] = val;
 	}
-	else if (address == 53281){
+	else if (address == 0xD020){
+		mRenderer->SetBorderColor(val);
+	}
+	else if (address == 0xD021){
 		// TODO: Expand to range?
 		mRenderer->SetBackgroundColor(val);
 	}

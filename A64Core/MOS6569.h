@@ -30,6 +30,8 @@ typedef struct _VICRect{
 
 class CVICHWScreen{
 public:
+		u8 GetBorderColor(){return mBorderColor;};
+		void SetBorderColor(u8 color){mBorderColor = color;};
 		u8 GetBackgroundColor(){return mBackGroundColor;};
 		void SetBackgroundColor(u8 color){mBackGroundColor = color;};
 
@@ -37,6 +39,7 @@ public:
 		virtual void DrawChar(u16 address, u8 c)  = 0;
 		virtual void DrawChars(u8* memory) = 0;
 protected:
+		u8 mBorderColor;
 		u8 mBackGroundColor;
 };
 

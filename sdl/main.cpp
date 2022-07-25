@@ -483,9 +483,9 @@ void Draw(void)
 
 void ClearScreen(void)
 {
-	SDL_Color* backgroundColor = &Colors[emcScreen_->GetBackgroundColor()];
+	SDL_Color* borderColor = &Colors[emcScreen_->GetBorderColor()];
 
-	SDL_SetRenderDrawColor(Renderer, backgroundColor->r, backgroundColor->g, backgroundColor->b, 0xff);
+	SDL_SetRenderDrawColor(Renderer, borderColor->r, borderColor->g, borderColor->b, 0xff);
 	SDL_RenderClear(Renderer);
 }
 
@@ -529,6 +529,7 @@ void ShutdownCharacterSet(void)
 void DrawCharacters(void)
 {
     auto vic = cbm64->GetVic();
+    auto backgroundColorCode = emcScreen_->GetBackgroundColor();
 
 	char shapeCode;
 	char colorCode;
@@ -540,14 +541,12 @@ void DrawCharacters(void)
 	{
 		for (columnIndex = 0; columnIndex < SCREEN_CHAR_WIDTH; ++columnIndex)
 		{
-            //shapeCode = charbuffer[(rowIndex * SCREEN_CHAR_WIDTH) + columnIndex];
             int characterPosition = (rowIndex * SCREEN_CHAR_WIDTH) + columnIndex;
+            
             shapeCode = vic->Peek(0x0400 + characterPosition);
-			if (shapeCode != 32)
-			{
-                colorCode = vic->Peek(0xD800 + characterPosition) & 0x0F;
-				DrawCharacter(columnIndex * CHARACTER_WIDTH, rowIndex * CHARACTER_HEIGHT, shapeCode, colorCode);
-			}
+            colorCode = vic->Peek(0xD800 + characterPosition) & 0x0F;
+            DrawRectangle(columnIndex * CHARACTER_WIDTH, rowIndex * CHARACTER_HEIGHT, CHARACTER_WIDTH, CHARACTER_HEIGHT, backgroundColorCode);
+            DrawCharacter(columnIndex * CHARACTER_WIDTH, rowIndex * CHARACTER_HEIGHT, shapeCode, colorCode);
 		}
 	}
 }
