@@ -33,7 +33,7 @@ CC := g++
 CFLAGS := `sdl2-config --cflags` -g $(CFLAGS)
 LFLAGS := `sdl2-config --libs` -pthread
 
-EXECUTABLE := cmos6510_sdl
+EXECUTABLE := $(OBJ_DIR)/cmos6510_sdl
 
 all: $(ROM_COPIES) $(EXECUTABLE)
 
