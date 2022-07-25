@@ -201,6 +201,10 @@ void CBus::Poke(u16 address, u8 m){
 			}else if(address >= mIO.fromAddress && address <= mIO.toAddress){
 				 mIO.device->Poke(address,m);
 				 address_range_index = 2;
+				if (address == 53281){
+					// TODO: This address should be poking a VIC register and it's not.
+					mVic.device->Poke(address,m);
+				}
 			}else if(address >= mVic.fromAddress && address <= mVic.toAddress){
 				 mVic.device->Poke(address,m);
 				 address_range_index = 3;

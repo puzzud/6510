@@ -83,18 +83,16 @@ int CMOS6569::Poke(u16 address, u8 val){
 		rect.width = 8;
 		rect.height = 8;
 
-		if (mRenderer != NULL)
-		{
+		if (mRenderer != NULL){
 			mRenderer->DrawPixels(mScreenBufPixel, &rect);		
 			mRenderer->DrawChars(mVideoMem);
-
-			if (address == 53281)
-			{
-				while(1);
-				mRenderer->SetBackgroundColor(val);
-			}
 		}
 	}
+	else if (address == 53281){
+		// TODO: Expand to range?
+		mRenderer->SetBackgroundColor(val);
+	}
+
 	return 0;
 }
 
