@@ -638,7 +638,7 @@ void DrawCharacter(unsigned int x, unsigned int y, char shapeCode, char colorCod
 	SDL_Rect destinationRect;
 
 	sourceRect.x = 0;
-	sourceRect.y = shapeCode * CHARACTER_HEIGHT;
+	sourceRect.y = (unsigned char)shapeCode * CHARACTER_HEIGHT;
 	sourceRect.w = CHARACTER_WIDTH;
 	sourceRect.h = CHARACTER_HEIGHT;
 
