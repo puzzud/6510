@@ -25,7 +25,7 @@ static char CMOS6569TextMap[128] =
 
 CMOS6569::CMOS6569(){
 	memset(mVideoMem, 0, (0x0800-0x0400));
-	memset(mColorRam, 0, (0xDBE7-0xD800));
+	memset(mColorRam, 0, (0xDBFF-0xD800));
 	mBus = CBus::GetInstance(); 
 	mBus->Register(eBusVic, this, 0x0400, 0x07FF);
 	mBus->Register(eBusIO, this, 0xD000, 0xDFFF); //@TODO, should be devided over other IO devices
@@ -46,7 +46,7 @@ u8 CMOS6569::Peek(u16 address){
 	if(address >= 0x0400 && address <= 0x07FF){
 		return mVideoMem[address-0x0400];
 	}
-	else if (address >= 0xD800 && address <= 0xDBE7){
+	else if (address >= 0xD800 && address <= 0xDBFF){
 		// NOTE: On a real system the high nibble
 		// of each byte is unreliable and essentially
 		// random noise from recent bus operations.
@@ -97,7 +97,7 @@ int CMOS6569::Poke(u16 address, u8 val){
 			mRenderer->DrawChars(mVideoMem);
 		}
 	}
-	else if (address >= 0xD800 && address <= 0xDBE7){
+	else if (address >= 0xD800 && address <= 0xDBFF){
 		mColorRam[address - 0xD800] = val;
 	}
 	else if (address == 0xD020){
