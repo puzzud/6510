@@ -605,12 +605,14 @@ void PopulateCharacterSurfaceFromCharacter(SDL_Surface* characterSurface, unsign
 
 	pixels = (unsigned int*)characterSurface->pixels;
 
+    int charRomCharOffset = characterIndex * CHARACTER_HEIGHT;
+
 	for (y = 0; y < CHARACTER_HEIGHT; ++y)
 	{
+        char charRowByte = cbm64->GetCharRom()->Peek(CHARROMSTART + charRomCharOffset + y);
+        
 		for (x = 0; x < CHARACTER_WIDTH; ++x)
 		{
-            int charRomCharOffset = characterIndex * CHARACTER_HEIGHT;
-            char charRowByte = cbm64->GetCharRom()->Peek(CHARROMSTART + charRomCharOffset + y);
             colorCode = charRowByte & (1 << (CHARACTER_WIDTH - x - 1));
 
 			// TODO: Actually, check color code.
