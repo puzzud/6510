@@ -74,6 +74,7 @@ public:
 	u8 PeekDevice(u8 deviceID, u16 address);
 	void SetMode(e_BusMode mode);
 
+	CDevice* GetDeviceAtAddress(u16 address);
 };
 
 
