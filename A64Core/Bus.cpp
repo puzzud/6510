@@ -120,7 +120,21 @@ u8 CBus::Peek(u16 address){
 			if( address >=0xD000 && address <= 0xDFFF ){
 				if(mHiRam || mLoRam){
 					if(mCharen){
-						return mIO.device->Peek(address);
+						if(address >= 0xD000 && address <= 0xD3FF){
+							return mVic.device->Peek(address);
+						/*}else if(address >= 0xD400 && address <= 0xD7FF){
+							return mSid.device->Peek(address);
+						*/}else if(address >= 0xD800 && address <= 0xDBFF){
+							return mVic.device->Peek(address);
+						}else if(address >= mCia1.fromAddress && address <= mCia1.toAddress){
+							return mCia1.device->Peek(address);
+						/*}else if(address >= 0xDD00 && address <= 0xDDFF){
+							return mCia2.device->Peek(address);
+						*/}else{
+							// TODO: SID, CIA 2, IO 1, IO 2 ranges.
+							cout << "Unmapped IO address peeked: 0x" << std::hex << address << " : 0x" << int(mRam.device->Peek(address)) << endl << std::dec;
+							return 0xFF; // NOTE: Return 0xFF to maintain previous behavior of accessing through VIC.
+						}
 					}else{
 						return mCharRom.device->Peek(address);
 					}
@@ -171,13 +185,10 @@ u8 CBus::Peek(u16 address){
 
 
 void CBus::Poke(u16 address, u8 m){
-	int address_range_index = -1;
-
 	switch(mMemoryMode){
 		case eBusModeProcesor:
 			
 			if(address == 0x0000 || address == 0x0001){
-				address_range_index = 0;
 			}
 			if(address == 0x0001){
 				//IO Port
@@ -194,32 +205,71 @@ void CBus::Poke(u16 address, u8 m){
 					if(ioMem & 4)mCharen = 1;
 					
 					mRam.device->Poke(1,m);
-					
-					address_range_index = 1;
 				}
+				
+				return;
+			}
+			
+			if(address >=0xD000 && address <= 0xDFFF){
+				if(mHiRam || mLoRam){
+					if(mCharen){
+						if(address >= 0xD000 && address <= 0xD3FF){
+							mVic.device->Poke(address,m);
+							return;
+						/*}else if(address >= 0xD400 && address <= 0xD7FF){
+							mSid.device->Poke(address,m);
+							return;
+						*/}else if(address >= 0xD800 && address <= 0xDBFF){
+							mVic.device->Poke(address,m);
+							return;
+						}else if(address >= mCia1.fromAddress && address <= mCia1.toAddress){
+							mCia1.device->Poke(address,m);
+							return;
+						/*}else if(address >= 0xDD00 && address <= 0xDDFF){
+							mCia2.device->Poke(address,m);
+							return;
+						*/}else{
+							// TODO: SID, CIA 2, IO 1, IO 2 ranges.
+							cout << "Unmapped IO address poked: 0x" << std::hex << address << " with 0x" << int(m) << endl << std::dec;
+						}
+					}else{
+						mCharRom.device->Poke(address,m);
+						return;
+					}
+				}else{
+					mRam.device->Poke(address,m);
+					return;
+				}
+			}
+			
+			if(address >= mVic.fromAddress && address <= mVic.toAddress){
+				mVic.device->Poke(address,m);
+				return;
+			}
+			
+			if(address >= 0xA000 && address <= 0xBFFF){
+				if(mHiRam && mLoRam){
+					mBasicRom.device->Poke(address,m);
+					return;
+				}else{
+					mRam.device->Poke(address,m);
+					return;
+				}
+			}
 
-			}else if(address >= mIO.fromAddress && address <= mIO.toAddress){
-				 mIO.device->Poke(address,m);
-				 address_range_index = 2;
-				if (address == 53281){
-					// TODO: This address should be poking a VIC register and it's not.
-					mVic.device->Poke(address,m);
+			if(address >= 0xE000 && address <= 0xFFFF){
+				if(mHiRam){
+					mKernalRom.device->Poke(address,m);
+					return;
+				}else{
+					mRam.device->Poke(address,m);
+					return;
 				}
-			}else if(address >= mVic.fromAddress && address <= mVic.toAddress){
-				 mVic.device->Poke(address,m);
-				 address_range_index = 3;
-			}else if(address >= mBasicRom.fromAddress && address <= mBasicRom.toAddress){
-				 mBasicRom.device->Poke(address,m);
-				 address_range_index = 4;
-			}else if(address >= mKernalRom.fromAddress && address <= mKernalRom.toAddress){
-				 mKernalRom.device->Poke(address,m);
-				 address_range_index = 5;
-			}else if(address >= mCia1.fromAddress && address <= mCia1.toAddress){
-				 mCia1.device->Poke(address,m);
-				 address_range_index = 6;
-			}else if(address >= mRam.fromAddress && address <= mRam.toAddress){
+			}
+
+			if(address >= mRam.fromAddress && address <= mRam.toAddress){
 				 mRam.device->Poke(address,m);
-				 address_range_index = 7;
+				 return;
 			}else{
 				cout << "Error 822" << endl;
 			}
@@ -229,12 +279,6 @@ void CBus::Poke(u16 address, u8 m){
 			mRam.device->Poke(address, m);
 			break;
 		}
-	
-	// TODO: Poke memory watch.
-	if (address == 53281)
-	{
-		cout << "53281" << ": " << int(m) << ":" << mMemoryMode << ":" << address_range_index << endl;
-	}
 }
 
 

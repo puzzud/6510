@@ -28,6 +28,7 @@ CMOS6569::CMOS6569(){
 	memset(mColorRam, 0, (0xDBFF-0xD800));
 	mBus = CBus::GetInstance(); 
 	mBus->Register(eBusVic, this, 0x0400, 0x07FF);
+	// TODO: Notice 'this' (VIC) being indicated as device for eBuseIO.
 	mBus->Register(eBusIO, this, 0xD000, 0xDFFF); //@TODO, should be devided over other IO devices
 }
 
