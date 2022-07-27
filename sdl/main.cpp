@@ -207,14 +207,21 @@ int main(int argc, char* argv[]) {
     CMOS6569* vic = cbm64->GetVic();
     unsigned char* screenBuffer = vic->RegisterHWScreen(emcScreen_);
 
-    MainLoop();
-    
-    std::cout << "ended..." << std::endl;
+#ifdef __EMSCRIPTEN__
+	emscripten_set_main_loop(MainLoopIteration, FRAMES_PER_SECOND, 1);
+	return 0;
+#else
+	MainLoop();
+
+	std::cout << "ended..." << std::endl;
 
     ShutdownCharacterSet();
     SDL_DestroyWindow(Window);
 	SDL_DestroyRenderer(Renderer);
     SDL_Quit();
+
+	return 0;
+#endif
 }
 
 void Process(void)

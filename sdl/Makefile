@@ -28,12 +28,20 @@ ROMS = ../roms/BASIC.ROM \
 
 ROM_COPIES = $(subst ../roms,./roms,$(ROMS))
 
-CC := g++
+CC = g++
 
 CFLAGS := `sdl2-config --cflags` -g $(CFLAGS)
 LFLAGS := `sdl2-config --libs` -pthread
 
-EXECUTABLE := $(OBJ_DIR)/cmos6510_sdl
+EXECUTABLE = $(OBJ_DIR)/cmos6510_sdl
+
+ifdef __EMSCRIPTEN__
+CC := emcc
+CFLAGS := -s USE_SDL=2
+LFLAGS := --preload-file roms
+EXECUTABLE := $(OBJ_DIR)/cmos6510.html
+EMBEDDED_ROMS := 1
+endif
 
 all: $(ROM_COPIES) $(EXECUTABLE)
 
