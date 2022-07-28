@@ -25,7 +25,7 @@ int CBM64Main::Init(){
 	mProcessor = new CMOS6510(mMutex);
 	mCia1 = new CMOS6526A(mMutex);
 	mCharRom = new CCharRom();
-	
+	mSid = new CMOS6581();
 	
     return 0;
 }
@@ -46,6 +46,7 @@ int CBM64Main::Stop(){
 	delete mBasicRom;
 	delete mCia1;
 	delete mCharRom;
+	delete mSid;
 	return 0;
 }
 

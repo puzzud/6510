@@ -18,6 +18,7 @@
 #include "BasicRom.h"
 #include "KernalRom.h"
 #include "MOS6526A.h"
+#include "MOS6581.h"
 #include "CharRom.h"
 #include "General.h"
 #include <thread>
@@ -32,6 +33,7 @@ class CBM64Main{
 		CCharRom* mCharRom;
 		CMOS6510* mProcessor;
 		CMOS6526A* mCia1;
+		CMOS6581* mSid;
 		
 		BKE_THREAD mCBM64Thread;
 		BKE_MUTEX mMutex;

@@ -50,6 +50,7 @@ private:
 	sBusDevice mCia1;
 	sBusDevice mCharRom;
 	sBusDevice mIO;
+	sBusDevice mSid;
 
 	e_BusMode mMemoryMode;
 	

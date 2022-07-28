@@ -39,6 +39,7 @@ CBus::CBus(){
 	memset(&mBasicRom, 0, sizeof(sBusDevice));
 	memset(&mKernalRom, 0, sizeof(sBusDevice));
 	memset(&mCia1, 0, sizeof(sBusDevice));
+	memset(&mSid, 0, sizeof(sBusDevice));
 
 	mLoRam = true;
 	mHiRam = true;
@@ -90,6 +91,11 @@ void CBus::Register(e_BusDevice devid, CDevice* device, u16 fromAddress, u16 toA
 			mCia1.fromAddress = fromAddress;
 			mCia1.toAddress = toAddress;
 			break;
+		case eBusSid:
+			mSid.device=device;
+			mSid.fromAddress = fromAddress;
+			mSid.toAddress = toAddress;
+			break;
 		default:
 			cout << "Error! 109" << endl;
 			break;
@@ -117,9 +123,9 @@ CDevice* CBus::GetDeviceAtAddress(u16 address){
 			if(mCharen){
 				if(address >= 0xD000 && address <= 0xD3FF){
 					return mVic.device;
-				/*}else if(address >= 0xD400 && address <= 0xD7FF){
+				}else if(address >= mSid.fromAddress && address <= mSid.toAddress){
 					return mSid.device;
-				*/}else if(address >= 0xD800 && address <= 0xDBFF){
+				}else if(address >= 0xD800 && address <= 0xDBFF){
 					return mVic.device;
 				}else if(address >= mCia1.fromAddress && address <= mCia1.toAddress){
 					return mCia1.device;
@@ -269,7 +275,10 @@ void CBus::PokeDevice(u8 deviceID, u16 address, u8 m){
 			break;		
 		case eBusCia1:
 			mCia1.device->Poke(address, m);
-			break;		
+			break;			
+		case eBusSid:
+			mSid.device->Poke(address, m);
+			break;
 		default:
 			cout << "Error! 1239" << endl;
 			break;
@@ -299,6 +308,9 @@ u8 CBus::PeekDevice(u8 deviceID, u16 address){
 		case eBusCia1:
 			return mCia1.device->Peek(address);
 			break;		
+		case eBusSid:
+			return mSid.device->Peek(address);
+			break;
 		default:
 			cout << "Error! 1239" << endl;
 			break;
