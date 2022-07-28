@@ -27,9 +27,7 @@ CMOS6569::CMOS6569(){
 	memset(mVideoMem, 0, (0x0800-0x0400));
 	memset(mColorRam, 0, (0xDBFF-0xD800));
 	mBus = CBus::GetInstance(); 
-	mBus->Register(eBusVic, this, 0x0400, 0x07FF);
-	// TODO: Notice 'this' (VIC) being indicated as device for eBuseIO.
-	mBus->Register(eBusIO, this, 0xD000, 0xDFFF); //@TODO, should be devided over other IO devices
+	mBus->Register(eBusVic, this, 0xD000, 0xD3FF);
 }
 
 void CMOS6569::SetChar(u16 address, u8 c){
