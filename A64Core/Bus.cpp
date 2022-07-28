@@ -20,6 +20,7 @@
 
 
 #include "Bus.h"
+#include "Common.h"
 
 CBus* CBus::_instance = 0;
 
@@ -39,6 +40,7 @@ CBus::CBus(){
 	memset(&mBasicRom, 0, sizeof(sBusDevice));
 	memset(&mKernalRom, 0, sizeof(sBusDevice));
 	memset(&mCia1, 0, sizeof(sBusDevice));
+	memset(&mCia2, 0, sizeof(sBusDevice));
 	memset(&mSid, 0, sizeof(sBusDevice));
 
 	mLoRam = true;
@@ -91,6 +93,11 @@ void CBus::Register(e_BusDevice devid, CDevice* device, u16 fromAddress, u16 toA
 			mCia1.fromAddress = fromAddress;
 			mCia1.toAddress = toAddress;
 			break;
+		case eBusCia2:
+			mCia2.device=device;
+			mCia2.fromAddress = fromAddress;
+			mCia2.toAddress = toAddress;
+			break;
 		case eBusSid:
 			mSid.device=device;
 			mSid.fromAddress = fromAddress;
@@ -129,9 +136,9 @@ CDevice* CBus::GetDeviceAtAddress(u16 address){
 					return mVic.device;
 				}else if(address >= mCia1.fromAddress && address <= mCia1.toAddress){
 					return mCia1.device;
-				/*}else if(address >= 0xDD00 && address <= 0xDDFF){
+				}else if(address >= mCia2.fromAddress && address <= mCia2.toAddress){
 					return mCia2.device;
-				*/}else{
+				}else{
 					return NULL;
 				}
 			}else{
@@ -275,6 +282,9 @@ void CBus::PokeDevice(u8 deviceID, u16 address, u8 m){
 			break;		
 		case eBusCia1:
 			mCia1.device->Poke(address, m);
+			break;		
+		case eBusCia2:
+			mCia2.device->Poke(address, m);
 			break;			
 		case eBusSid:
 			mSid.device->Poke(address, m);
@@ -307,6 +317,9 @@ u8 CBus::PeekDevice(u8 deviceID, u16 address){
 			break;		
 		case eBusCia1:
 			return mCia1.device->Peek(address);
+			break;		
+		case eBusCia2:
+			return mCia2.device->Peek(address);
 			break;		
 		case eBusSid:
 			return mSid.device->Peek(address);

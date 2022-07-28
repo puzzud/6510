@@ -17,7 +17,8 @@
 #include "Ram.h"
 #include "BasicRom.h"
 #include "KernalRom.h"
-#include "MOS6526A.h"
+#include "MOS6526_CIA1.h"
+#include "MOS6526_CIA2.h"
 #include "MOS6581.h"
 #include "CharRom.h"
 #include "General.h"
@@ -32,7 +33,8 @@ class CBM64Main{
 		CKernalRom* mKernalRom;
 		CCharRom* mCharRom;
 		CMOS6510* mProcessor;
-		CMOS6526A* mCia1;
+		CMOS6526CIA1* mCia1;
+		CMOS6526CIA2* mCia2;
 		CMOS6581* mSid;
 		
 		BKE_THREAD mCBM64Thread;
@@ -47,7 +49,8 @@ class CBM64Main{
 		int GetDisassemble();
 		
 		CMOS6569* GetVic();
-		CMOS6526A* GetCia1();
+		CMOS6526CIA1* GetCia1();
+		CMOS6526CIA2* GetCia2();
 		CCharRom* GetCharRom();
 
 		int LoadApp(char* fname);

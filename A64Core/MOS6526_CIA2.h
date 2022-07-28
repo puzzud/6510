@@ -11,21 +11,21 @@
 
 // https://www.c64-wiki.com/wiki/CIA
 
-#ifndef MOS6569A_H
-#define MOS6569A_H
+#ifndef MOS6569CIA2_H
+#define MOS6569CIA2_H
 
 #include "Common.h"
 #include "Device.h"
 #include "Bus.h"
 
-class CMOS6526A : public CDevice{
+class CMOS6526CIA2 : public CDevice{
 private:
 	CBus* mBus;
 	BKE_MUTEX mMutex;
 protected:
 public:
-	CMOS6526A(BKE_MUTEX mutex);
-	~CMOS6526A();
+	CMOS6526CIA2(BKE_MUTEX mutex);
+	~CMOS6526CIA2();
 
     void Cycle();
 
@@ -34,6 +34,8 @@ public:
 	int Poke(u16 address, u8 val); 	
 
 	int AddKeyStroke(char c);
+
+public:
 };
 
 
