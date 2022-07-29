@@ -16,6 +16,7 @@
 #include "Device.h"
 #include "Bus.h"
 
+#define CHARACTER_MEMORY_BANK_SIZE           0x0800
 #define SCREEN_MEMORY_BANK_SIZE              0x0400
 
 
@@ -50,7 +51,9 @@ class CMOS6569 : public CDevice{
 		u8 Peek(u16 address);
 		int Poke(u16 address, u8 val); 
 
+		u16 GetCharacterMemoryOffset();
 		u16 GetScreenMemoryOffset();
+		u16 GetSpritePointersMemoryOffset();
 
 		void SetChar(u16 address, u8 c); //temp
 		

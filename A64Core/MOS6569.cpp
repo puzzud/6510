@@ -79,9 +79,20 @@ int CMOS6569::Poke(u16 address, u8 val){
 }
 
 
+u16 CMOS6569::GetCharacterMemoryOffset(){
+	u8 vicCharacterMemoryBankIndex = (chipMemoryControlRegister >> 1) & 0x0F;
+	return vicCharacterMemoryBankIndex * CHARACTER_MEMORY_BANK_SIZE;
+}
+
+
 u16 CMOS6569::GetScreenMemoryOffset(){
 	u8 vicScreenMemoryBankIndex = (chipMemoryControlRegister >> 4) & 0x0F;
 	return vicScreenMemoryBankIndex * SCREEN_MEMORY_BANK_SIZE;
+}
+
+
+u16 CMOS6569::GetSpritePointersMemoryOffset(){
+	return GetScreenMemoryOffset() + SCREEN_MEMORY_BANK_SIZE - 8; // 8 is # of sprites.
 }
 
 
