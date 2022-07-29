@@ -454,8 +454,9 @@ void DrawScreenLine(unsigned int lineNumber)
 {
 	auto bus = CBus::GetInstance();
 	auto vic = cbm64->GetVic();
-	u16 vicScreenMemoryStartAddress = vic->GetScreenMemoryOffset();
-	u16 vicCharacterMemoryStartAddress = vic->GetCharacterMemoryOffset();
+	u16 vicMemoryBankStartAddress = bus->GetVicMemoryBankStartAddress();
+	u16 vicScreenMemoryStartAddress = vicMemoryBankStartAddress + vic->GetScreenMemoryOffset();
+	u16 vicCharacterMemoryStartAddress = vicMemoryBankStartAddress + vic->GetCharacterMemoryOffset();
 
 	SDL_Rect rect;
 	rect.y = lineNumber;
@@ -478,15 +479,13 @@ void DrawScreenLine(unsigned int lineNumber)
 	{
 		int characterScreenMemoryOffset = (rowIndex * SCREEN_CHAR_WIDTH) + columnIndex;
 
-		bus->SetMode(eBusModeProcesor);
 		unsigned char colorCode = bus->PeekDevice(eBusVic, 0xD800 + characterScreenMemoryOffset) & 0x0F;
 		unsigned char shapeCode = bus->PeekDevice(eBusRam, vicScreenMemoryStartAddress + characterScreenMemoryOffset);
 
 		int characterRomCharOffset = shapeCode * CHARACTER_HEIGHT;
-		bus->SetMode(eBusModeVic);
-		//unsigned char charRowByte = bus->Peek(vicCharacterMemoryStartAddress + characterRomCharOffset + characterRowIndex);
 		
-		unsigned char charRowByte = cbm64->GetCharRom()->Peek(CHARROMSTART + characterRomCharOffset + characterRowIndex);
+		bus->SetMode(eBusModeVic);
+		unsigned char charRowByte = bus->Peek(vicCharacterMemoryStartAddress + characterRomCharOffset + characterRowIndex);
 
 		rect.w = 1;
 		for (int x = 0; x < CHARACTER_WIDTH; ++x)
@@ -501,6 +500,4 @@ void DrawScreenLine(unsigned int lineNumber)
 			}
 		}
 	}
-
-	bus->SetMode(eBusModeProcesor);
 }

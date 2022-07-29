@@ -80,7 +80,7 @@ int CMOS6569::Poke(u16 address, u8 val){
 
 
 u16 CMOS6569::GetCharacterMemoryOffset(){
-	u8 vicCharacterMemoryBankIndex = (chipMemoryControlRegister >> 1) & 0x0F;
+	u8 vicCharacterMemoryBankIndex = (chipMemoryControlRegister >> 1) & 0x03;
 	return vicCharacterMemoryBankIndex * CHARACTER_MEMORY_BANK_SIZE;
 }
 
