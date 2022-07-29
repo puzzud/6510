@@ -64,13 +64,8 @@ void InitializeColors(void);
 void SetColorValuesFromInt(SDL_Color* color, unsigned int value);
 void Draw(void);
 void ClearScreen(void);
-void DrawRectangle(unsigned int x, unsigned int y, unsigned int width, unsigned int height, char colorCode);
-void InitializeCharacterSet(void);
-void ShutdownCharacterSet(void);
-void DrawCharacters(void);
-void DrawCharacter(unsigned int x, unsigned int y, char shapeCode, char colorCode);
-void PopulateCharacterSetSurfaceFromCharacterSet(SDL_Surface* characterSetSurface);
-void PopulateCharacterSurfaceFromCharacter(SDL_Surface* characterSurface, unsigned int characterIndex);
+void DrawScreen();
+void DrawScreenLine(unsigned int lineNumber);
 
 class HiresTimeImpl;
 class EMCScreen;
@@ -180,8 +175,6 @@ int main(int argc, char* argv[]) {
     cbm64 = new CBM64Main();
     cbm64->Init();
 
-    InitializeCharacterSet();
-
     //Set the hires time callbacks
     HiresTimeImpl hiresTime;
     cbm64->SetHiresTimeProvider(&hiresTime);
@@ -198,7 +191,6 @@ int main(int argc, char* argv[]) {
 
 	std::cout << "ended..." << std::endl;
 
-    ShutdownCharacterSet();
     SDL_DestroyWindow(Window);
 	SDL_DestroyRenderer(Renderer);
     SDL_Quit();
@@ -434,39 +426,10 @@ void SetColorValuesFromInt(SDL_Color* color, unsigned int value)
 	color->a = 0xff;
 }
 
-SDL_Surface* CreateSurface(unsigned int width, unsigned int height)
-{
-	Uint32 rmask, gmask, bmask, amask;
-
-	// SDL interprets each pixel as a 32-bit number,
-	// so our masks must depend on the endianness (byte order) of the machine.
-#if SDL_BYTEORDER == SDL_BIG_ENDIAN
-	rmask = 0xff000000;
-	gmask = 0x00ff0000;
-	bmask = 0x0000ff00;
-	amask = 0x000000ff;
-#else
-	rmask = 0x000000ff;
-	gmask = 0x0000ff00;
-	bmask = 0x00ff0000;
-	amask = 0xff000000;
-#endif
-
-	return SDL_CreateRGBSurface
-		(
-			0,
-			width, height,
-			32,
-			rmask, gmask, bmask, amask
-		);
-}
-
 void Draw(void)
 {
 	ClearScreen();
-
-	DrawCharacters();
-	//DrawSprites();
+	DrawScreen();
 
 	SDL_RenderPresent(Renderer);
 }
@@ -479,166 +442,65 @@ void ClearScreen(void)
 	SDL_RenderClear(Renderer);
 }
 
-void DrawRectangle(unsigned int x, unsigned int y, unsigned int width, unsigned int height, char colorCode)
+void DrawScreen()
 {
-	SDL_Color* color = &Colors[colorCode];
+	for (unsigned int lineNumber = 0; lineNumber < SCREEN_HEIGHT; ++lineNumber)
+	{
+		DrawScreenLine(lineNumber);
+	}
+}
+
+void DrawScreenLine(unsigned int lineNumber)
+{
+	auto bus = CBus::GetInstance();
+	auto vic = cbm64->GetVic();
+	u16 vicScreenMemoryStartAddress = vic->GetScreenMemoryOffset();
+	u16 vicCharacterMemoryStartAddress = vic->GetCharacterMemoryOffset();
 
 	SDL_Rect rect;
-	rect.x = x;
-	rect.y = y;
-	rect.w = width;
-	rect.h = height;
+	rect.y = lineNumber;
+	rect.h = 1;
 
-	SDL_SetRenderDrawColor(Renderer, color->r, color->g, color->b, color->a);
-	
+	rect.x = 0;
+	rect.w = SCREEN_WIDTH;
+
+	SDL_Color* backgroundColor = &Colors[emcScreen_->GetBackgroundColor()];
+	SDL_SetRenderDrawColor(Renderer, backgroundColor->r, backgroundColor->g, backgroundColor->b, backgroundColor->a);
 	SDL_RenderFillRect(Renderer, &rect);
-}
 
-void InitializeCharacterSet(void)
-{
-	SDL_Surface* characterSetSurface = CreateSurface(CHARACTER_WIDTH, NUMBER_OF_CHARACTERS * CHARACTER_HEIGHT);
-	if (characterSetSurface == NULL)
+	rect.w = 0;
+
+	unsigned int rowIndex = lineNumber / CHARACTER_HEIGHT;
+	unsigned int characterRowIndex = lineNumber % CHARACTER_HEIGHT;
+
+	// 1 column (1 byte) per cycle.
+	for (unsigned int columnIndex = 0; columnIndex < SCREEN_CHAR_WIDTH; ++columnIndex)
 	{
-		// TODO: Generate error.
-		return;
-	}
+		int characterScreenMemoryOffset = (rowIndex * SCREEN_CHAR_WIDTH) + columnIndex;
 
-	PopulateCharacterSetSurfaceFromCharacterSet(characterSetSurface);
+		bus->SetMode(eBusModeProcesor);
+		unsigned char colorCode = bus->PeekDevice(eBusVic, 0xD800 + characterScreenMemoryOffset) & 0x0F;
+		unsigned char shapeCode = bus->PeekDevice(eBusRam, vicScreenMemoryStartAddress + characterScreenMemoryOffset);
 
-	CharacterSetTexture = SDL_CreateTextureFromSurface(Renderer, characterSetSurface);
-
-	SDL_FreeSurface(characterSetSurface);
-	characterSetSurface = NULL;
-}
-
-void ShutdownCharacterSet(void)
-{
-	SDL_DestroyTexture(CharacterSetTexture);
-}
-
-void DrawCharacters(void)
-{
-    auto backgroundColorCode = emcScreen_->GetBackgroundColor();
-
-	char shapeCode;
-	char colorCode;
-
-	unsigned int columnIndex;
-	unsigned int rowIndex;
-
-	auto bus = CBus::GetInstance();
-	u16 vicScreenMemoryStartAddress = bus->GetVicMemoryBankStartAddress() + cbm64->GetVic()->GetScreenMemoryOffset();
-
-	for (rowIndex = 0; rowIndex < SCREEN_CHAR_HEIGHT; ++rowIndex)
-	{
-		for (columnIndex = 0; columnIndex < SCREEN_CHAR_WIDTH; ++columnIndex)
-		{
-            int characterPosition = (rowIndex * SCREEN_CHAR_WIDTH) + columnIndex;
-            
-			shapeCode = bus->PeekDevice(eBusRam, vicScreenMemoryStartAddress + characterPosition);
-            colorCode = bus->PeekDevice(eBusVic, 0xD800 + characterPosition) & 0x0F;
-            DrawRectangle(columnIndex * CHARACTER_WIDTH, rowIndex * CHARACTER_HEIGHT, CHARACTER_WIDTH, CHARACTER_HEIGHT, backgroundColorCode);
-            DrawCharacter(columnIndex * CHARACTER_WIDTH, rowIndex * CHARACTER_HEIGHT, shapeCode, colorCode);
-		}
-	}
-}
-
-void PopulateCharacterSetSurfaceFromCharacterSet(SDL_Surface* characterSetSurface)
-{
-	unsigned int characterIndex;
-
-	SDL_Rect characterDestinationRect;
-	
-	SDL_Surface* characterSurface = CreateSurface(CHARACTER_WIDTH, CHARACTER_HEIGHT);
-	if (characterSurface == NULL)
-	{
-		// TODO: Generate error.
-		return;
-	}
-
-	characterDestinationRect.w = CHARACTER_WIDTH;
-	characterDestinationRect.h = CHARACTER_HEIGHT;
-
-	// Initial destination location for the first character graphic.
-	characterDestinationRect.x = 0;
-	characterDestinationRect.y = 0;
-
-	for (characterIndex = 0; characterIndex < NUMBER_OF_CHARACTERS; ++characterIndex)
-	{
-		PopulateCharacterSurfaceFromCharacter(characterSurface, characterIndex);
-
-		// Copy it over.
-		SDL_BlitSurface
-			(
-				characterSurface,
-				NULL,
-				characterSetSurface,
-				&characterDestinationRect
-			);
+		int characterRomCharOffset = shapeCode * CHARACTER_HEIGHT;
+		bus->SetMode(eBusModeVic);
+		//unsigned char charRowByte = bus->Peek(vicCharacterMemoryStartAddress + characterRomCharOffset + characterRowIndex);
 		
-		// Determine destination location for next character graphic.
-		characterDestinationRect.y += CHARACTER_HEIGHT;
-	}
+		unsigned char charRowByte = cbm64->GetCharRom()->Peek(CHARROMSTART + characterRomCharOffset + characterRowIndex);
 
-	SDL_FreeSurface(characterSurface);
-	characterSurface = NULL;
-}
-
-void PopulateCharacterSurfaceFromCharacter(SDL_Surface* characterSurface, unsigned int characterIndex)
-{
-	unsigned int x, y;
-	char colorCode;
-	unsigned int* pixels;
-
-	if (SDL_MUSTLOCK(characterSurface))
-	{
-		SDL_LockSurface(characterSurface);
-	}
-
-	pixels = (unsigned int*)characterSurface->pixels;
-
-    int charRomCharOffset = characterIndex * CHARACTER_HEIGHT;
-
-	for (y = 0; y < CHARACTER_HEIGHT; ++y)
-	{
-        char charRowByte = cbm64->GetCharRom()->Peek(CHARROMSTART + charRomCharOffset + y);
-        
-		for (x = 0; x < CHARACTER_WIDTH; ++x)
+		rect.w = 1;
+		for (int x = 0; x < CHARACTER_WIDTH; ++x)
 		{
-            colorCode = charRowByte & (1 << (CHARACTER_WIDTH - x - 1));
+            if (charRowByte & (1 << (CHARACTER_WIDTH - x - 1)))
+			{
+				rect.x = (columnIndex * CHARACTER_WIDTH) + x;
 
-			// TODO: Actually, check color code.
-			*((unsigned int*)pixels) = colorCode != 0 ?
-				SDL_MapRGBA(characterSurface->format, 255, 255, 255, 255) :
-				SDL_MapRGBA(characterSurface->format, 0, 0, 0, 0);
-			
-			++pixels;
+				SDL_Color* color = &Colors[colorCode];
+				SDL_SetRenderDrawColor(Renderer, color->r, color->g, color->b, color->a);
+				SDL_RenderFillRect(Renderer, &rect);
+			}
 		}
 	}
 
-	if (SDL_MUSTLOCK(characterSurface))
-	{
-		SDL_UnlockSurface(characterSurface);
-	}
-}
-
-void DrawCharacter(unsigned int x, unsigned int y, char shapeCode, char colorCode)
-{
-	SDL_Color* color = &Colors[colorCode];
-
-	SDL_Rect sourceRect;
-	SDL_Rect destinationRect;
-
-	sourceRect.x = 0;
-	sourceRect.y = (unsigned char)shapeCode * CHARACTER_HEIGHT;
-	sourceRect.w = CHARACTER_WIDTH;
-	sourceRect.h = CHARACTER_HEIGHT;
-
-	destinationRect.x = x;
-	destinationRect.y = y;
-	destinationRect.w = CHARACTER_WIDTH;
-	destinationRect.h = CHARACTER_HEIGHT;
-
-	SDL_SetTextureColorMod(CharacterSetTexture, color->r, color->g, color->b);
-	SDL_RenderCopy(Renderer, CharacterSetTexture, &sourceRect, &destinationRect);
+	bus->SetMode(eBusModeProcesor);
 }
