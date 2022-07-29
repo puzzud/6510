@@ -123,6 +123,11 @@ class HiresTimeImpl : public CHiresTime {
 class EMCScreen : public CVICHWScreen {
     public:
         EMCScreen() {
+			// TODO: Maybe best to just pull this data directly from VIC,
+			// instead of duplicating in HWScreen.
+			SetBorderColor(0);
+			SetBackgroundColor(0);
+
             activescreen_ = new std::atomic<int>();
             *activescreen_ = 0;
             for (int i=0; i<2; i++) {
