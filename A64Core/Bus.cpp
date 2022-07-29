@@ -163,12 +163,6 @@ e_BusDevice CBus::GetDeviceIdFromAddress(u16 address){
 	if(address == 0x0000 || address == 0x0001){
 		return eBusCpu;
 	}
-		
-	/* --- CHECK BELOW --- */	
-	/* VIC IO - CHANGE THIS*/
-	if(address >= 0x0400 && address <= 0x07FF){
-		return eBusVic;
-	}
 	
 	/* RAM */
 	return eBusRam;
@@ -241,6 +235,19 @@ void CBus::Poke(u16 address, u8 m){
 
 			if(deviceId != eBusNone){
 				PokeDevice(deviceId,address,m);
+
+				// NOTE: This block would be sufficient to set up hooks for
+				// alerting the VIC and internal HWScreen about when this memory changes.
+				/*
+				if(deviceId == eBusRam){
+					u16 vicMemoryBankStartAddress = GetVicMemoryBankStartAddress();
+
+					// 16K range of RAM that the VIC is observing.
+					if(address >= vicMemoryBankStartAddress && address <= (vicMemoryBankStartAddress + 0x4000 - 1)){
+						// TODO: Do alert.
+					}
+				}
+				*/
 			}
 		}
 			break;
@@ -337,3 +344,7 @@ u8 CBus::PeekDevice(u8 deviceID, u16 address){
 	return 0;
 }
 
+u16 CBus::GetVicMemoryBankStartAddress(){
+	u8 vicBankIndex = ~PeekDevice(eBusCia2,0xDD00) & 0x03;
+	return vicBankIndex * 0x4000;
+}

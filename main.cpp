@@ -21,7 +21,6 @@ bool _run = true;
 HiresTimeImpl* hiresTime_ = NULL;
 uint64_t total_cycles = 0;
 uint64_t start = 0;
-char charbuffer[320*200];
 
 
 static char CMOS6569TextMap[128] = 
@@ -70,32 +69,15 @@ void Inthandler(int sig)
     _run = false;
 }
 
-uint8_t *screenbuffer_[2];
-std::atomic<int> *activescreen_;
 class EMCScreen : public CVICHWScreen {
     public:
-        EMCScreen() {
-            activescreen_ = new std::atomic<int>();
-            *activescreen_ = 0;
-            for (int i=0; i<2; i++) {
-                screenbuffer_[i] = (uint8_t*)calloc(320*200, sizeof(uint8_t));
-            }
-        }
-        ~EMCScreen() {
-            for (int i=0; i<2; i++) {
-                free(screenbuffer_[i]);
-            }        
-            delete(activescreen_);
-        }
+        EMCScreen(){}
+        ~EMCScreen(){}
     public:
-        void DrawPixels(u8* screenBuffer, VICRect* area) {
-        }
         void DrawChar(u16 address, u8 c) {
         }
         int cnt_ = 0;
-        void DrawChars(u8* memory) {
-            memcpy(charbuffer, memory, 320*200);
-        }
+        void DrawChars(u8* memory){}
     public:
 };
 
@@ -126,11 +108,14 @@ void runloop() {
 }
 
 void uiloop() {
+    auto bus = CBus::GetInstance();
+	u16 vicScreenMemoryStartAddress = bus->GetVicMemoryBankStartAddress() + cbm64->GetVic()->GetScreenMemoryOffset();
+
     std::cout << "\033[0;0H" << std::endl; 
     std::cout << "\u001b[44m" << std::endl; 
     for (int y=0;y<25;y++) {
         for (int x=0;x<40;x++) {
-            uint8_t m = charbuffer[y*40+x];
+            uint8_t m = bus->PeekDevice(eBusRam, vicScreenMemoryStartAddress + (y*40+x));
             char c = '_';
             if (m < 128) {
                 c = CMOS6569TextMap[m]; 
@@ -219,7 +204,7 @@ int main(int argc, char* argv[]) {
     //Subscribe Host hardware related VIC Code
     emcScreen_ = new EMCScreen();
     CMOS6569* vic = cbm64->GetVic();
-    unsigned char* screenBuffer = vic->RegisterHWScreen(emcScreen_);
+    vic->RegisterHWScreen(emcScreen_);
 
     signal(SIGINT, Inthandler);
 

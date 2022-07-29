@@ -86,7 +86,6 @@ SDL_Texture* CharacterSetTexture;
 
 bool _run = true;
 uint64_t total_cycles = 0;
-char charbuffer[SCREEN_WIDTH * SCREEN_HEIGHT];
 
 
 uint64_t now() {
@@ -127,31 +126,11 @@ class EMCScreen : public CVICHWScreen {
 			// instead of duplicating in HWScreen.
 			SetBorderColor(0);
 			SetBackgroundColor(0);
-
-            activescreen_ = new std::atomic<int>();
-            *activescreen_ = 0;
-            for (int i=0; i<2; i++) {
-                screenbuffer_[i] = (uint8_t*)calloc(SCREEN_WIDTH * SCREEN_HEIGHT, sizeof(uint8_t));
-            }
         }
-        ~EMCScreen() {
-            for (int i=0; i<2; i++) {
-                free(screenbuffer_[i]);
-            }        
-            delete(activescreen_);
-        }
-
-        std::atomic<int> *activescreen_;
-        uint8_t *screenbuffer_[2];
+        ~EMCScreen(){}
     public:
-        void DrawPixels(u8* screenBuffer, VICRect* area) {
-        }
-        void DrawChar(u16 address, u8 c) {
-        }
-        int cnt_ = 0;
-        void DrawChars(u8* memory) {
-            memcpy(charbuffer, memory, SCREEN_WIDTH * SCREEN_HEIGHT);
-        }
+        void DrawChar(u16 address, u8 c){}
+        void DrawChars(u8* memory){}
     public:
 };
 
@@ -209,8 +188,7 @@ int main(int argc, char* argv[]) {
 
     //Subscribe Host hardware related VIC Code
     emcScreen_ = new EMCScreen();
-    CMOS6569* vic = cbm64->GetVic();
-    unsigned char* screenBuffer = vic->RegisterHWScreen(emcScreen_);
+    cbm64->GetVic()->RegisterHWScreen(emcScreen_);
 
 #ifdef __EMSCRIPTEN__
 	emscripten_set_main_loop(MainLoopIteration, FRAMES_PER_SECOND, 1);
@@ -540,7 +518,6 @@ void ShutdownCharacterSet(void)
 
 void DrawCharacters(void)
 {
-    auto vic = cbm64->GetVic();
     auto backgroundColorCode = emcScreen_->GetBackgroundColor();
 
 	char shapeCode;
@@ -549,14 +526,17 @@ void DrawCharacters(void)
 	unsigned int columnIndex;
 	unsigned int rowIndex;
 
+	auto bus = CBus::GetInstance();
+	u16 vicScreenMemoryStartAddress = bus->GetVicMemoryBankStartAddress() + cbm64->GetVic()->GetScreenMemoryOffset();
+
 	for (rowIndex = 0; rowIndex < SCREEN_CHAR_HEIGHT; ++rowIndex)
 	{
 		for (columnIndex = 0; columnIndex < SCREEN_CHAR_WIDTH; ++columnIndex)
 		{
             int characterPosition = (rowIndex * SCREEN_CHAR_WIDTH) + columnIndex;
             
-            shapeCode = vic->Peek(0x0400 + characterPosition);
-            colorCode = vic->Peek(0xD800 + characterPosition) & 0x0F;
+			shapeCode = bus->PeekDevice(eBusRam, vicScreenMemoryStartAddress + characterPosition);
+            colorCode = bus->PeekDevice(eBusVic, 0xD800 + characterPosition) & 0x0F;
             DrawRectangle(columnIndex * CHARACTER_WIDTH, rowIndex * CHARACTER_HEIGHT, CHARACTER_WIDTH, CHARACTER_HEIGHT, backgroundColorCode);
             DrawCharacter(columnIndex * CHARACTER_WIDTH, rowIndex * CHARACTER_HEIGHT, shapeCode, colorCode);
 		}

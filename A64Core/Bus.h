@@ -79,6 +79,8 @@ public:
 	void SetMode(e_BusMode mode);
 
 	e_BusDevice GetDeviceIdFromAddress(u16 address);
+
+	u16 GetVicMemoryBankStartAddress();
 };
 
 
