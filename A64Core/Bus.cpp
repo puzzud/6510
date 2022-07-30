@@ -235,19 +235,6 @@ void CBus::Poke(u16 address, u8 m){
 
 			if(deviceId != eBusNone){
 				PokeDevice(deviceId,address,m);
-
-				// NOTE: This block would be sufficient to set up hooks for
-				// alerting the VIC and internal HWScreen about when this memory changes.
-				/*
-				if(deviceId == eBusRam){
-					u16 vicMemoryBankStartAddress = GetVicMemoryBankStartAddress();
-
-					// 16K range of RAM that the VIC is observing.
-					if(address >= vicMemoryBankStartAddress && address <= (vicMemoryBankStartAddress + 0x4000 - 1)){
-						// TODO: Do alert.
-					}
-				}
-				*/
 			}
 		}
 			break;
