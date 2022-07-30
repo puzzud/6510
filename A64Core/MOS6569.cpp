@@ -24,11 +24,10 @@ static char CMOS6569TextMap[128] =
 
 
 CMOS6569::CMOS6569(){
-	memset(mVideoMem, 0, (0x0800-0x0400));
+	chipMemoryControlRegister = 0;
 	memset(mColorRam, 0, (0xDBFF-0xD800));
 	mBus = CBus::GetInstance(); 
-	mBus->Register(eBusVic, this, 0x0400, 0x07FF);
-	mBus->Register(eBusIO, this, 0xD000, 0xDFFF); //@TODO, should be devided over other IO devices
+	mBus->Register(eBusVic, this, 0xD000, 0xD3FF);
 }
 
 void CMOS6569::SetChar(u16 address, u8 c){
@@ -43,10 +42,7 @@ void CMOS6569::Cycle(){
 }
 
 u8 CMOS6569::Peek(u16 address){
-	if(address >= 0x0400 && address <= 0x07FF){
-		return mVideoMem[address-0x0400];
-	}
-	else if (address >= 0xD800 && address <= 0xDBFF){
+	if(address >= 0xD800 && address <= 0xDBFF){
 		// NOTE: On a real system the high nibble
 		// of each byte is unreliable and essentially
 		// random noise from recent bus operations.
@@ -57,54 +53,25 @@ u8 CMOS6569::Peek(u16 address){
 	if(address == 0xD012){
 		return 0;
 	}
+	if(address == 0xD018){
+		return chipMemoryControlRegister;
+	}
+	
 	return 0xff;
 }
 
 
 int CMOS6569::Poke(u16 address, u8 val){
-    //std::cout << "Poke (mos6596)" << std::endl;
-	VICRect rect;
-	u8 v; //Vertical (Y) position of char
-	u8 cl; //character line
-	int p;
-	
-	
-	//In character buffer 40x25?
-	if(address >= 0x0400 && address <= 0x07FF){
-		//adress-0x0400
-		mVideoMem[address-0x0400] = val;
-		
-		//Write it to our screen buffer (320 * 200)
-		
-		rect.x = (address-0x0400)%40;//= p*8
-		rect.y = (u16) ((address-0x0400)/40)*8;
-		p = rect.x + (rect.y * 40);
-		
-		
-		for(v=0;v<8;v++){
-			mBus->SetMode(eBusModeVic);
-			//Read char from charRom (from VIC address mode charrom = 0x1000 or 0x9000)
-			cl = mBus->Peek(0x1000 + (val * 8) + v);
-			
-			mScreenBufPixel[ /*Y=*/   /*X=*/  p + (v * 40 /*(320/8)*/)] = CUtil::Reverse(cl);
-		}
-		
-		rect.width = 8;
-		rect.height = 8;
-
-		if (mRenderer != NULL){
-			mRenderer->DrawPixels(mScreenBufPixel, &rect);		
-			mRenderer->DrawChars(mVideoMem);
-		}
-	}
-	else if (address >= 0xD800 && address <= 0xDBFF){
+	if (address >= 0xD800 && address <= 0xDBFF){
 		mColorRam[address - 0xD800] = val;
+	}
+	else if(address == 0xD018){
+		chipMemoryControlRegister = val;
 	}
 	else if (address == 0xD020){
 		mRenderer->SetBorderColor(val);
 	}
 	else if (address == 0xD021){
-		// TODO: Expand to range?
 		mRenderer->SetBackgroundColor(val);
 	}
 
@@ -112,9 +79,25 @@ int CMOS6569::Poke(u16 address, u8 val){
 }
 
 
-u8* CMOS6569::RegisterHWScreen(CVICHWScreen* screen){
+u16 CMOS6569::GetCharacterMemoryOffset(){
+	u8 vicCharacterMemoryBankIndex = (chipMemoryControlRegister >> 1) & 0x03;
+	return vicCharacterMemoryBankIndex * CHARACTER_MEMORY_BANK_SIZE;
+}
+
+
+u16 CMOS6569::GetScreenMemoryOffset(){
+	u8 vicScreenMemoryBankIndex = (chipMemoryControlRegister >> 4) & 0x0F;
+	return vicScreenMemoryBankIndex * SCREEN_MEMORY_BANK_SIZE;
+}
+
+
+u16 CMOS6569::GetSpritePointersMemoryOffset(){
+	return GetScreenMemoryOffset() + SCREEN_MEMORY_BANK_SIZE - 8; // 8 is # of sprites.
+}
+
+
+void CMOS6569::RegisterHWScreen(CVICHWScreen* screen){
 	mRenderer = screen;
-	return mScreenBufPixel;
 }
 
 

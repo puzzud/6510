@@ -23,9 +23,10 @@ int CBM64Main::Init(){
 	mBasicRom = new CBasicRom();
 	mKernalRom = new CKernalRom();
 	mProcessor = new CMOS6510(mMutex);
-	mCia1 = new CMOS6526A(mMutex);
+	mCia1 = new CMOS6526CIA1(mMutex);
+	mCia2 = new CMOS6526CIA2(mMutex);
 	mCharRom = new CCharRom();
-	
+	mSid = new CMOS6581();
 	
     return 0;
 }
@@ -35,6 +36,7 @@ int CBM64Main::Cycle(){
     mVic->Cycle();
 	int cycles = mProcessor->Cycle();
     mCia1->Cycle();
+    mCia2->Cycle();
     return cycles;
 }
 
@@ -45,7 +47,9 @@ int CBM64Main::Stop(){
 	delete mKernalRom;
 	delete mBasicRom;
 	delete mCia1;
+	delete mCia2;
 	delete mCharRom;
+	delete mSid;
 	return 0;
 }
 
@@ -53,8 +57,12 @@ CMOS6569* CBM64Main::GetVic(){
 	return mVic;
 }
 
-CMOS6526A* CBM64Main::GetCia1(){
+CMOS6526CIA1* CBM64Main::GetCia1(){
 	return mCia1;
+}
+
+CMOS6526CIA2* CBM64Main::GetCia2(){
+	return mCia2;
 }
 
 CCharRom* CBM64Main::GetCharRom(){

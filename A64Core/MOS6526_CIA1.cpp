@@ -7,36 +7,36 @@
  *
  */
 
-#include "MOS6526A.h"
+#include "MOS6526_CIA1.h"
 
 
-CMOS6526A::CMOS6526A(BKE_MUTEX mutex){
+CMOS6526CIA1::CMOS6526CIA1(BKE_MUTEX mutex){
 	mMutex = mutex;
 	mBus = CBus::GetInstance();
-	mBus->Register(eBusCia1,this, 0xDC00, 0xDC0F);
+	mBus->Register(eBusCia1,this, 0xDC00, 0xDCFF);
 }
 
-CMOS6526A::~CMOS6526A(){
+CMOS6526CIA1::~CMOS6526CIA1(){
 }
 
-u8 CMOS6526A::GetDeviceID(){
+u8 CMOS6526CIA1::GetDeviceID(){
 	return eBusCia1;
 }
 
-void CMOS6526A::Cycle(){
+void CMOS6526CIA1::Cycle(){
 }
 
-u8 CMOS6526A::Peek(u16 address){
-	return mBus->PeekDevice(eBusRam,address);
+u8 CMOS6526CIA1::Peek(u16 address){
+    return mBus->PeekDevice(eBusRam,address);
 }
 
 
-int CMOS6526A::Poke(u16 address, u8 val){
-	mBus->PokeDevice(eBusRam,address,val);
+int CMOS6526CIA1::Poke(u16 address, u8 val){
+    mBus->PokeDevice(eBusRam,address,val);
 	return 0;
 }	
 
-int CMOS6526A::AddKeyStroke(char c){
+int CMOS6526CIA1::AddKeyStroke(char c){
 	BKE_MUTEX_LOCK(mMutex);
 	
 	u8 bufPos = mBus->Peek(0xC6);

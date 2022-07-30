@@ -21,7 +21,9 @@ typedef struct _sBusDevice{
 }sBusDevice;
 
 typedef enum _e_BusDevice{
-	eBusRam = 1,
+	eBusNone = -1,
+	eBusCpu,
+	eBusRam,
 	eBusBasicRom,
 	eBusKernalRom,
 	eBusSid,
@@ -48,8 +50,10 @@ private:
 	sBusDevice mKernalRom;
 	sBusDevice mProcessor;
 	sBusDevice mCia1;
+	sBusDevice mCia2;
 	sBusDevice mCharRom;
 	sBusDevice mIO;
+	sBusDevice mSid;
 
 	e_BusMode mMemoryMode;
 	
@@ -74,6 +78,9 @@ public:
 	u8 PeekDevice(u8 deviceID, u16 address);
 	void SetMode(e_BusMode mode);
 
+	e_BusDevice GetDeviceIdFromAddress(u16 address);
+
+	u16 GetVicMemoryBankStartAddress();
 };
 
 

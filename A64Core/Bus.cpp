@@ -20,6 +20,7 @@
 
 
 #include "Bus.h"
+#include "Common.h"
 
 CBus* CBus::_instance = 0;
 
@@ -39,6 +40,8 @@ CBus::CBus(){
 	memset(&mBasicRom, 0, sizeof(sBusDevice));
 	memset(&mKernalRom, 0, sizeof(sBusDevice));
 	memset(&mCia1, 0, sizeof(sBusDevice));
+	memset(&mCia2, 0, sizeof(sBusDevice));
+	memset(&mSid, 0, sizeof(sBusDevice));
 
 	mLoRam = true;
 	mHiRam = true;
@@ -49,6 +52,11 @@ CBus::CBus(){
 	mPort1 = 0xFF;
 
 	mMemoryMode = eBusModeProcesor;
+
+	// TODO: No single device instance associated with IO.
+	// PeekDevice & PokeDevice should be enhanced to resolve the appropriate device,
+	// if called with eBusIO.
+	Register(eBusIO, NULL, 0xD000, 0xDFFF);
 }
 
 
@@ -90,6 +98,16 @@ void CBus::Register(e_BusDevice devid, CDevice* device, u16 fromAddress, u16 toA
 			mCia1.fromAddress = fromAddress;
 			mCia1.toAddress = toAddress;
 			break;
+		case eBusCia2:
+			mCia2.device=device;
+			mCia2.fromAddress = fromAddress;
+			mCia2.toAddress = toAddress;
+			break;
+		case eBusSid:
+			mSid.device=device;
+			mSid.fromAddress = fromAddress;
+			mSid.toAddress = toAddress;
+			break;
 		default:
 			cout << "Error! 109" << endl;
 			break;
@@ -103,57 +121,75 @@ void CBus::SetMode(e_BusMode mode){
 }	
 
 
+e_BusDevice CBus::GetDeviceIdFromAddress(u16 address){
+	// NOTE: Assumes eBusModeProcesor.
+
+	/* Basic ROM or RAM */
+	if(address >= 0xA000 && address <= 0xBFFF){
+		return (mHiRam && mLoRam) ? eBusBasicRom : eBusRam;
+	}
+	
+	/* CharRom or IO or RAM */
+	if(address >=0xD000 && address <= 0xDFFF){
+		if(mHiRam || mLoRam){
+			if(mCharen){
+				if(address >= mVic.fromAddress && address <= mVic.toAddress){
+					return eBusVic;
+				}else if(address >= mSid.fromAddress && address <= mSid.toAddress){
+					return eBusSid;
+				}else if(address >= 0xD800 && address <= 0xDBFF){
+					return eBusVic;
+				}else if(address >= mCia1.fromAddress && address <= mCia1.toAddress){
+					return eBusCia1;
+				}else if(address >= mCia2.fromAddress && address <= mCia2.toAddress){
+					return eBusCia2;
+				}else{
+					return eBusNone;
+				}
+			}else{
+				return eBusCharRom;
+			}
+		}else{
+			return eBusRam;
+		}
+	}
+		
+	/* Kernal ROM or RAM */	
+	if(address >= 0xE000 && address <= 0xFFFF){
+		return (mHiRam) ? eBusKernalRom : eBusRam;
+	}
+	
+	/* Processor Ports */
+	if(address == 0x0000 || address == 0x0001){
+		return eBusCpu;
+	}
+	
+	/* RAM */
+	return eBusRam;
+}
+
+
 u8 CBus::Peek(u16 address){	
 	switch(mMemoryMode){
-		case eBusModeProcesor:
+		case eBusModeProcesor:{
+			e_BusDevice deviceId = GetDeviceIdFromAddress(address);
 
-			/* Basic ROM */
-			if( address >= 0xA000 && address <= 0xBFFF ){
-				if(mHiRam && mLoRam){
-					return mBasicRom.device->Peek(address);
-				}else{
-					return mRam.device->Peek(address);
+			if(deviceId == eBusNone){
+				cout << "Unmapped address peeked: 0x" << std::hex << address << " : 0x" << endl << std::dec;
+				return 0xFF; // NOTE: Return 0xFF to maintain previous behavior of accessing through VIC.
+			}else if(deviceId == eBusCpu){
+				if(address == 0x0000){
+					return 0x2F;
+				}else if(address == 0x0001){
+					// Fall back to RAM for now.
+					deviceId = eBusRam;
 				}
 			}
-			
-			/* CharRom or IO */
-			if( address >=0xD000 && address <= 0xDFFF ){
-				if(mHiRam || mLoRam){
-					if(mCharen){
-						return mIO.device->Peek(address);
-					}else{
-						return mCharRom.device->Peek(address);
-					}
-				}else{
-					return mRam.device->Peek(address);
-				}
-			 }
-			 
-			/* Kernal ROM */	
-			if(address >= 0xE000 && address <= 0xFFFF){
-				if(mHiRam){
-					return mKernalRom.device->Peek(address);
-				}else{
-					return mRam.device->Peek(address);
-				}
+
+			if(deviceId != eBusNone){
+				return PeekDevice(deviceId, address);
 			}
-			
-			/* Byte 0 (Processor Port) */
-			if( address == 0x0000 ){
-				return 0x2F;
-			}
-		
-				
-			/* --- CHECK BELOW --- */	
-			/* VIC IO - CHANGE THIS*/
-			if(address >= mVic.fromAddress && address <= mVic.toAddress){
-				return mVic.device->Peek(address);
-			}
-			
-			
-			/* RAM */
-			return mRam.device->Peek(address);
-			
+		}
 			break;
 		case eBusModeVic:
 			SetMode(eBusModeProcesor);
@@ -165,25 +201,24 @@ u8 CBus::Peek(u16 address){
 				return mCharRom.device->Peek(address);
 			}
 			return mRam.device->Peek(address);
-		}				
+	}				
 	return 0;	
 }
 
 
 void CBus::Poke(u16 address, u8 m){
-	int address_range_index = -1;
-
 	switch(mMemoryMode){
-		case eBusModeProcesor:
-			
-			if(address == 0x0000 || address == 0x0001){
-				address_range_index = 0;
-			}
-			if(address == 0x0001){
-				//IO Port
-				{
-					u8 r0 = mPort1; //mRam.device->Peek(1);
+		case eBusModeProcesor:{
+			e_BusDevice deviceId = GetDeviceIdFromAddress(address);
 
+			if(deviceId == eBusNone){
+				cout << "Unmapped address poked: 0x" << std::hex << address << " with 0x" << int(m) << endl << std::dec;
+			}else if(deviceId == eBusCpu){
+				if(address == 0x0000){	
+					// Do nothing special for now.
+				}else if(address == 0x0001){
+					//IO Port
+					u8 r0 = mPort1; //mRam.device->Peek(1);
 					
 					u8 ioMem = m;// (r0 & m);
 					mPort1 = ioMem;
@@ -192,49 +227,22 @@ void CBus::Poke(u16 address, u8 m){
 					if(ioMem & 1)mLoRam = 1;
 					if(ioMem & 2)mHiRam = 1;
 					if(ioMem & 4)mCharen = 1;
-					
-					mRam.device->Poke(1,m);
-					
-					address_range_index = 1;
 				}
 
-			}else if(address >= mIO.fromAddress && address <= mIO.toAddress){
-				 mIO.device->Poke(address,m);
-				 address_range_index = 2;
-				if (address == 53281){
-					// TODO: This address should be poking a VIC register and it's not.
-					mVic.device->Poke(address,m);
-				}
-			}else if(address >= mVic.fromAddress && address <= mVic.toAddress){
-				 mVic.device->Poke(address,m);
-				 address_range_index = 3;
-			}else if(address >= mBasicRom.fromAddress && address <= mBasicRom.toAddress){
-				 mBasicRom.device->Poke(address,m);
-				 address_range_index = 4;
-			}else if(address >= mKernalRom.fromAddress && address <= mKernalRom.toAddress){
-				 mKernalRom.device->Poke(address,m);
-				 address_range_index = 5;
-			}else if(address >= mCia1.fromAddress && address <= mCia1.toAddress){
-				 mCia1.device->Poke(address,m);
-				 address_range_index = 6;
-			}else if(address >= mRam.fromAddress && address <= mRam.toAddress){
-				 mRam.device->Poke(address,m);
-				 address_range_index = 7;
-			}else{
-				cout << "Error 822" << endl;
+				// Fall back to RAM (probably not correct).
+				deviceId = eBusRam;
 			}
+
+			if(deviceId != eBusNone){
+				PokeDevice(deviceId,address,m);
+			}
+		}
 			break;
 		case eBusModeVic:
 			SetMode(eBusModeProcesor);	
 			mRam.device->Poke(address, m);
 			break;
 		}
-	
-	// TODO: Poke memory watch.
-	if (address == 53281)
-	{
-		cout << "53281" << ": " << int(m) << ":" << mMemoryMode << ":" << address_range_index << endl;
-	}
 }
 
 
@@ -254,9 +262,9 @@ void CBus::Poke16(u16 address, u16 m){
 void CBus::PokeDevice(u8 deviceID, u16 address, u8 m){
 	
 	switch(deviceID){
-		case eBusIO:
-			mIO.device->Poke(address, m);
-			break;		
+		//case eBusIO:
+		//	mIO.device->Poke(address, m);
+		//	break;		
 		case eBusVic:
 			mVic.device->Poke(address, m);
 			break;		
@@ -275,6 +283,12 @@ void CBus::PokeDevice(u8 deviceID, u16 address, u8 m){
 		case eBusCia1:
 			mCia1.device->Poke(address, m);
 			break;		
+		case eBusCia2:
+			mCia2.device->Poke(address, m);
+			break;			
+		case eBusSid:
+			mSid.device->Poke(address, m);
+			break;
 		default:
 			cout << "Error! 1239" << endl;
 			break;
@@ -283,9 +297,9 @@ void CBus::PokeDevice(u8 deviceID, u16 address, u8 m){
 
 u8 CBus::PeekDevice(u8 deviceID, u16 address){
 	switch(deviceID){
-		case eBusIO:
-			return mIO.device->Peek(address);
-			break;		
+		//case eBusIO:
+		//	return mIO.device->Peek(address);
+		//	break;		
 		case eBusVic:
 			return mVic.device->Peek(address);
 			break;		
@@ -304,6 +318,12 @@ u8 CBus::PeekDevice(u8 deviceID, u16 address){
 		case eBusCia1:
 			return mCia1.device->Peek(address);
 			break;		
+		case eBusCia2:
+			return mCia2.device->Peek(address);
+			break;		
+		case eBusSid:
+			return mSid.device->Peek(address);
+			break;
 		default:
 			cout << "Error! 1239" << endl;
 			break;
@@ -311,3 +331,7 @@ u8 CBus::PeekDevice(u8 deviceID, u16 address){
 	return 0;
 }
 
+u16 CBus::GetVicMemoryBankStartAddress(){
+	u8 vicBankIndex = ~PeekDevice(eBusCia2,0xDD00) & 0x03;
+	return vicBankIndex * 0x4000;
+}

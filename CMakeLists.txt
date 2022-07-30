@@ -20,8 +20,10 @@ set(SRC
     A64Core/KernalRom.cpp
     A64Core/MOS6510.cpp
     A64Core/MOS6510Debug.cpp
-    A64Core/MOS6526A.cpp
+    A64Core/MOS6526_CIA1.cpp
+    A64Core/MOS6526_CIA2.cpp
     A64Core/MOS6569.cpp
+    A64Core/MOS6581.cpp
     A64Core/Ram.cpp
     A64Core/Util.cpp 
     main.cpp)
