@@ -27,6 +27,7 @@ class CRam : public CDevice{
 		u8 GetDeviceID();
 		u8 Peek(u16 address);
 		int Poke(u16 address, u8 val); 
+		int PokeBlock(u16 address, u8* memory, u16 size);
 		int LoadBasic(char* fname);
 		int LoadApp(char* fname);
 		int LoadBinary(char* fname, u16 address);

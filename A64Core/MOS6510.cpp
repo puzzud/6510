@@ -611,6 +611,11 @@ bool CMOS6510::GetOperandAddress(u8 addressMode, u16* address){
 }
 
 
+void CMOS6510::SetPC(u16 address){
+	r_pc = address;
+}
+
+
 bool CMOS6510::DBGRunOneInstruction(u16* pc, u16* sp, u8* a, u8* x, u8* y, u8* p){
 	r_pc = *pc;
 	r_sp = *sp;

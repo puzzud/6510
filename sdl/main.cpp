@@ -22,16 +22,6 @@
 #define FRAMES_PER_SECOND	60
 #define USE_PERFORMANCE_COUNTER 1
 
-#define SCREEN_WIDTH 320
-#define SCREEN_HEIGHT 200
-
-#define CHARACTER_WIDTH 8
-#define CHARACTER_HEIGHT 8
-#define NUMBER_OF_CHARACTERS 256
-
-#define SCREEN_CHAR_WIDTH (SCREEN_WIDTH / CHARACTER_WIDTH)
-#define SCREEN_CHAR_HEIGHT (SCREEN_HEIGHT / CHARACTER_HEIGHT)
-
 typedef enum
 {
 	COLOR_BLACK,
@@ -62,8 +52,6 @@ void OnInputKeyEvent(SDL_Event* event, unsigned int isDown);
 void OnInputTextInputEvent(SDL_Event* event);
 void InitializeColors(void);
 void SetColorValuesFromInt(SDL_Color* color, unsigned int value);
-void Draw(void);
-void ClearScreen(void);
 void DrawScreen();
 void DrawScreenLine(unsigned int lineNumber);
 
@@ -126,7 +114,21 @@ class EMCScreen : public CVICHWScreen {
     public:
         void DrawChar(u16 address, u8 c){}
         void DrawChars(u8* memory){}
-    public:
+		void OnRasterLineCompleted(unsigned int lineNumber){
+			// TODO: Catch & translate border lines & V blank lines.
+			DrawScreenLine(lineNumber);
+
+			if (lineNumber == NTSC_FIELD_LINE_HEIGHT){
+				SDL_RenderPresent(Renderer);
+				
+				// Clear render display (avoids artifacts in "border" in SDL window when resized).
+				//SDL_Color* color = &Colors[emcScreen_->GetBorderColor()];
+				SDL_Color* color = &Colors[COLOR_BLACK];
+
+				SDL_SetRenderDrawColor(Renderer, color->r, color->g, color->b, 0xff);
+				SDL_RenderClear(Renderer);
+			}
+		};
 };
 
 
@@ -182,6 +184,16 @@ int main(int argc, char* argv[]) {
     //Subscribe Host hardware related VIC Code
     emcScreen_ = new EMCScreen();
     cbm64->GetVic()->RegisterHWScreen(emcScreen_);
+
+	if (argc > 1)
+	{
+		cbm64->LoadAppWithoutBasic(argv[1]);
+	}
+
+	if (argc > 2)
+	{
+		cbm64->GetCpu()->SetPC(std::strtol(argv[2], NULL, 16));
+	}
 
 #ifdef __EMSCRIPTEN__
 	emscripten_set_main_loop(MainLoopIteration, FRAMES_PER_SECOND, 1);
@@ -249,8 +261,6 @@ inline void MainLoopIteration(void)
 	}
 
 	Process();
-
-	Draw();
 
 #ifndef __EMSCRIPTEN__
 	// Cap to 60 FPS.
@@ -426,22 +436,6 @@ void SetColorValuesFromInt(SDL_Color* color, unsigned int value)
 	color->a = 0xff;
 }
 
-void Draw(void)
-{
-	ClearScreen();
-	DrawScreen();
-
-	SDL_RenderPresent(Renderer);
-}
-
-void ClearScreen(void)
-{
-	SDL_Color* borderColor = &Colors[emcScreen_->GetBorderColor()];
-
-	SDL_SetRenderDrawColor(Renderer, borderColor->r, borderColor->g, borderColor->b, 0xff);
-	SDL_RenderClear(Renderer);
-}
-
 void DrawScreen()
 {
 	for (unsigned int lineNumber = 0; lineNumber < SCREEN_HEIGHT; ++lineNumber)
@@ -465,7 +459,7 @@ void DrawScreenLine(unsigned int lineNumber)
 	rect.x = 0;
 	rect.w = SCREEN_WIDTH;
 
-	SDL_Color* backgroundColor = &Colors[emcScreen_->GetBackgroundColor()];
+	SDL_Color* backgroundColor = &Colors[emcScreen_->GetBackgroundColor() % 16];
 	SDL_SetRenderDrawColor(Renderer, backgroundColor->r, backgroundColor->g, backgroundColor->b, backgroundColor->a);
 	SDL_RenderFillRect(Renderer, &rect);
 
@@ -494,7 +488,7 @@ void DrawScreenLine(unsigned int lineNumber)
 			{
 				rect.x = (columnIndex * CHARACTER_WIDTH) + x;
 
-				SDL_Color* color = &Colors[colorCode];
+				SDL_Color* color = &Colors[colorCode % 16];
 				SDL_SetRenderDrawColor(Renderer, color->r, color->g, color->b, color->a);
 				SDL_RenderFillRect(Renderer, &rect);
 			}
