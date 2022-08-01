@@ -234,6 +234,11 @@ void CBus::Poke(u16 address, u8 m){
 			}
 
 			if(deviceId != eBusNone){
+				if(deviceId == eBusBasicRom || deviceId == eBusCharRom || deviceId == eBusKernalRom){
+					// For pokes, fall down into RAM.
+					deviceId = eBusRam;
+				}
+
 				PokeDevice(deviceId,address,m);
 			}
 		}
