@@ -27,6 +27,8 @@ CMOS6569::CMOS6569(){
 	memset(mRegs, 0, 47);
 	memset(mColorRam, 0, (0xDBFF-0xD800));
 
+	irq = false;
+
 	rasterLine = 0;
 	perLineClockCycle = 0;
 
@@ -103,6 +105,11 @@ int CMOS6569::Poke(u16 address, u8 val){
 	}
 
 	return 0;
+}
+
+
+bool CMOS6569::GetIRQ(){
+	return irq;
 }
 
 

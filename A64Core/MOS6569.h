@@ -63,6 +63,8 @@ class CMOS6569 : public CDevice{
 		u8& chipMemoryControlRegister = *(mRegs + (0xD018 - 0xD000));
 		u8 mColorRam[0xDBFF-0xD800];
 
+		bool irq;
+
 		u16 rasterLine;
 		u8 perLineClockCycle;
 
@@ -77,6 +79,8 @@ class CMOS6569 : public CDevice{
 
 		u8 Peek(u16 address);
 		int Poke(u16 address, u8 val); 
+
+		bool GetIRQ();
 
 		u16 GetCharacterMemoryOffset();
 		u16 GetScreenMemoryOffset();

@@ -33,10 +33,15 @@ int CBM64Main::Init(){
 
 
 int CBM64Main::Cycle(){
-    mVic->Cycle();
-	int cycles = mProcessor->Cycle();
-    mCia1->Cycle();
-    mCia2->Cycle();
+	mProcessor->SetIRQ(mVic->GetIRQ() || mCia1->GetIRQ());
+    int cycles = mProcessor->Cycle();
+
+	for (int i = 0; i < cycles; ++i){
+		mVic->Cycle();
+		mCia1->Cycle();
+		mCia2->Cycle();
+	}
+
     return cycles;
 }
 

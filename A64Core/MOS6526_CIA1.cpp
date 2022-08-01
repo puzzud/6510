@@ -8,12 +8,28 @@
  */
 
 #include "MOS6526_CIA1.h"
+#include <sys/time.h>
 
+
+static int getTimeNow(){
+	struct timeval t;
+	gettimeofday(&t, NULL);	
+	return ((t.tv_sec * 1000000) + t.tv_usec); //mHiresTime->GetMicrosecondsLo();
+}
 
 CMOS6526CIA1::CMOS6526CIA1(BKE_MUTEX mutex){
 	mMutex = mutex;
+
+	irq = false;
+	
 	mBus = CBus::GetInstance();
 	mBus->Register(eBusCia1,this, 0xDC00, 0xDCFF);
+
+	timerAEnabled = false;
+	timerACompleted = false;
+	timerAIrqEnabled = false;
+
+	prevIrqTime = getTimeNow();
 }
 
 CMOS6526CIA1::~CMOS6526CIA1(){
@@ -24,17 +40,54 @@ u8 CMOS6526CIA1::GetDeviceID(){
 }
 
 void CMOS6526CIA1::Cycle(){
+	if(timerAEnabled){
+		int timeNow = getTimeNow();
+
+		if(timeNow - prevIrqTime >= 16700){ // 1/60 second to spoof default kernal setting.
+			timerACompleted = true;
+			
+			// TODO: Manage excess remainder for next call.
+			prevIrqTime = timeNow;
+		}
+	}
+
+	// NOTE: Does this condition require timerAEnabled?
+	irq = timerAIrqEnabled && timerAEnabled && timerACompleted;
 }
 
 u8 CMOS6526CIA1::Peek(u16 address){
-    return mBus->PeekDevice(eBusRam,address);
+	if(address == 0xDC0D){
+		u8 val = timerACompleted ? 1 : 0;
+
+		timerACompleted = false; // Reset when read.
+	}
+
+	return 0;
 }
 
 
 int CMOS6526CIA1::Poke(u16 address, u8 val){
-    mBus->PokeDevice(eBusRam,address,val);
+	if(address == 0xDC0D){
+		if((val & 0x80) != 0){
+			timerAIrqEnabled = (val & 0x01) != 0;
+		}else{
+			timerAIrqEnabled = (val & 0x01) == 0;
+		}
+
+		//cout << int(timerAIrqEnabled) << endl;
+	}else if(address == 0xDC0E){
+		timerAEnabled = (val & 0x01) != 0;
+		if(timerAEnabled){
+			prevIrqTime = getTimeNow();
+		}
+	}
+
 	return 0;
 }	
+
+bool CMOS6526CIA1::GetIRQ(){
+	return irq;
+}
 
 int CMOS6526CIA1::AddKeyStroke(char c){
 	BKE_MUTEX_LOCK(mMutex);
