@@ -27,8 +27,12 @@ CMOS6569::CMOS6569(){
 	memset(mRegs, 0, 47);
 	memset(mColorRam, 0, (0xDBFF-0xD800));
 
+	irq = false;
+
 	rasterLine = 0;
 	perLineClockCycle = 0;
+
+	rasterLineCompare = 0;
 
 	mBus = CBus::GetInstance(); 
 	mBus->Register(eBusVic, this, 0xD000, 0xD3FF);
@@ -54,6 +58,14 @@ void CMOS6569::Cycle(){
 			rasterLine = 0;
 		}
 	}
+
+	if (rasterLine == rasterLineCompare){
+		mRegs[0xD019 - 0xD000] |= 0x81; // Mark possible interrupt flags.
+	}
+
+	bool rasterLineCompareIrqEnabled = (mRegs[0xD01A - 0xD000] & 0x01) != 0;
+	bool rasterLineCompareMatched = (mRegs[0xD019 - 0xD000] & 0x01) != 0;
+	irq = rasterLineCompareIrqEnabled && rasterLineCompareMatched;
 }
 
 u8 CMOS6569::Peek(u16 address){
@@ -93,16 +105,33 @@ int CMOS6569::Poke(u16 address, u8 val){
 		mColorRam[address - 0xD800] = val;
 	}else if(address >= 0xD000 && address <= (0xD000 + 47)){
 		// TODO: Implement mirroring.
-		mRegs[address - 0xD000] = val;
 
-		if (address == 0xD020){
+		if (address == 0xD011){
+			rasterLineCompare = (rasterLineCompare & 0xFF) | ((val & 0x80) << 1);
+		}else if (address == 0xD012){
+			rasterLineCompare = (rasterLineCompare & 0x100) | val;
+		}else if (address == 0xD019){
+			u8 previousVal = mRegs[address - 0xD000];
+			val = previousVal & ~(val & 0x0F);
+			val &= 0x7F;
+			if ((val & 0x0F) != 0){
+				val |= 0x80;
+			}
+		}else if (address == 0xD020){
 			mRenderer->SetBorderColor(val);
 		}else if (address == 0xD021){
 			mRenderer->SetBackgroundColor(val);
 		}
+
+		mRegs[address - 0xD000] = val;
 	}
 
 	return 0;
+}
+
+
+bool CMOS6569::GetIRQ(){
+	return irq;
 }
 
 

@@ -189,11 +189,13 @@ private:
 	u8	r_p; //Processor Status register 
 
     uint64_t _cycles = 0;
-    long mips;
-    long mipsactive;
 
-    int timeNow, prevIrTime, startMips;
-    bool ir;
+    //long mips;
+    //long mipsactive;
+    //startMips;
+
+	//bool nmi;
+    bool irq;
 
 	CBus* mBus;
 	CBus *mMemory;
@@ -225,6 +227,9 @@ public:
 	u16 Pop16();
 	//PC	
 	void SetPC(u16 address);	
+	//IRQ
+	void SetIRQ(bool state);
+
 	bool DBGRunOneInstruction(u16* pc, u16* sp, u8* a, u8* x, u8* y, u8* p);
 	void DBGTraceLine(u8 cmd, u16 prevPC);
 	void SetHiresTime(CHiresTime* hiresTime);

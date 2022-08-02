@@ -446,6 +446,15 @@ void DrawScreen()
 
 void DrawScreenLine(unsigned int lineNumber)
 {
+	// TODO: Figure out this number!
+#define SCREEN_START_FIELD_LINE 51
+	if (lineNumber < SCREEN_START_FIELD_LINE)
+	{
+		return;
+	}
+
+	lineNumber -= SCREEN_START_FIELD_LINE;
+
 	auto bus = CBus::GetInstance();
 	auto vic = cbm64->GetVic();
 	u16 vicMemoryBankStartAddress = bus->GetVicMemoryBankStartAddress();

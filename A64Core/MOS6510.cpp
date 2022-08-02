@@ -11,7 +11,7 @@
 
 #include "MOS6510.h"
 #include "Util.h"
-#include <sys/time.h>
+//#include <sys/time.h>
 
 static MOS6502Opcodes opcodeMatrix[] = 
 {
@@ -155,14 +155,11 @@ CMOS6510::CMOS6510(BKE_MUTEX mutex){
 	r_y		= 0x00;
 	r_p		= 0x20;
 
-    mips = 0;
-    mipsactive = 0;
+    //mips = 0;
+    //mipsactive = 0;
+	//startMips = ((t.tv_sec * 1000000) + t.tv_usec);
 
-	timeval t;
-	gettimeofday(&t, NULL);	
-	mips = 0;
-	startMips = prevIrTime = ((t.tv_sec * 1000000) + t.tv_usec) ;
-    ir = false;
+    irq = false;
 
     opnull = strdup("---");	
 
@@ -450,37 +447,33 @@ int CMOS6510::Cycle() {
 		}
 
         //IRQ's
-		mips++;
+		/*mips++;
 		mipsactive++;
-		if(mipsactive >= 25000){		
+		if(mipsactive >= 25000)*/{		
 			//IRQ
-			struct timeval t;
+			/*struct timeval t;
             gettimeofday(&t, NULL);	
-			timeNow = ((t.tv_sec * 1000000) + t.tv_usec); //mHiresTime->GetMicrosecondsLo();
-			if(ir){
-				if(timeNow - prevIrTime >= 20000){
-					if(ISFLAG(FLAG_I) == 0){
-						//Maskable IRQ
-						IRQ();
-					}
-					//Non Maskable IRQ
-//					NMI();
-					prevIrTime = timeNow;
+			timeNow = ((t.tv_sec * 1000000) + t.tv_usec); //mHiresTime->GetMicrosecondsLo();*/
+			
+			//Non Maskable IRQ
+			//if(nmi){
+			//	NMI();
+			//}
+
+			//IRQ
+			if(irq){
+				if(ISFLAG(FLAG_I) == 0){
+					//Maskable IRQ
+					IRQ();
 				}
-			}else{
-				if(timeNow - prevIrTime >= 500000){
-					ir = true; // Enable IR
-					prevIrTime = timeNow;
-				}
-			}//ir
+			}
 				
 			//MIPS
-			if(timeNow - startMips >= 5000000){
+			/*if(timeNow - startMips >= 5000000){
 				//cout << "mips (*1000) = " << dec << (mips / 1000) / 5 << endl;
 				mips = 0;
 				startMips = timeNow;
-			}
-	
+			}*/
 		}
 	
         return _cycles;
@@ -613,6 +606,11 @@ bool CMOS6510::GetOperandAddress(u8 addressMode, u16* address){
 
 void CMOS6510::SetPC(u16 address){
 	r_pc = address;
+}
+
+
+void CMOS6510::SetIRQ(bool state){
+	irq = state;
 }
 
 

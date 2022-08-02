@@ -20,7 +20,15 @@
 
 class CMOS6526CIA1 : public CDevice{
 private:
+	bool irq;
+
+	bool timerAEnabled;
+	bool timerACompleted;
+	bool timerAIrqEnabled;
+	int prevIrqTime;
+
 	CBus* mBus;
+
 	BKE_MUTEX mMutex;
 protected:
 public:
@@ -32,6 +40,8 @@ public:
 	u8 GetDeviceID();
 	u8 Peek(u16 address);
 	int Poke(u16 address, u8 val); 	
+
+	bool GetIRQ();
 
 	int AddKeyStroke(char c);
 };
