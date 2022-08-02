@@ -136,7 +136,7 @@ bool CMOS6569::GetIRQ(){
 
 
 u16 CMOS6569::GetCharacterMemoryOffset(){
-	u8 vicCharacterMemoryBankIndex = (chipMemoryControlRegister >> 1) & 0x03;
+	u8 vicCharacterMemoryBankIndex = (chipMemoryControlRegister >> 1) & 0x07;
 	return vicCharacterMemoryBankIndex * CHARACTER_MEMORY_BANK_SIZE;
 }
 
