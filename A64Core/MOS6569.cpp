@@ -80,7 +80,7 @@ u8 CMOS6569::Peek(u16 address){
 	}
 
 	// TODO: Implement mirroring.
-	if(address >= 0xD000 && address <= (0xD000 + 47)){
+	if(address >= 0xD000 && address <= (0xD000 + 47 - 1)){
 		if(address == 0xD011){
 			u8 val = mRegs[address-0xD000];
 
@@ -104,7 +104,7 @@ u8 CMOS6569::Peek(u16 address){
 int CMOS6569::Poke(u16 address, u8 val){
 	if (address >= 0xD800 && address <= 0xDBFF){
 		mColorRam[address - 0xD800] = val;
-	}else if(address >= 0xD000 && address <= (0xD000 + 47)){
+	}else if(address >= 0xD000 && address <= (0xD000 + 47 - 1)){
 		// TODO: Implement mirroring.
 
 		if (address == 0xD011){
