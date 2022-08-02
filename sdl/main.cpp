@@ -68,8 +68,7 @@ SDL_Color Colors[NUMBER_OF_COLORS];
 SDL_Texture* CharacterSetTexture;
 
 bool _run = true;
-uint64_t total_cycles = 0;
-
+uint64_t remainingCycles = 0;
 
 uint64_t now() {
     uint64_t now = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
@@ -133,27 +132,20 @@ class EMCScreen : public CVICHWScreen {
 
 
 void runloop() {
-    int target_cycles = 1023000; //NTSC
-    int cycles_100_ms = target_cycles / 10;
-    int cycles = 0;
+	//1023000 // NTSC
+	static const int cyclesInFrame = NTSC_FIELD_CYCLES_PER_LINE * NTSC_FIELD_LINE_HEIGHT;
 
-    /*while (_run)*/ {
-        cycles = 0;
-        uint64_t ts = now();
+	int cycles = remainingCycles;
 
-        while (true) {
-            cycles += cbm64->Cycle();
-            if (cycles >= cycles_100_ms) {
-                total_cycles += cycles;
-                uint64_t elapsed = now() - ts;
-                if (elapsed < 100) {
-                    //usleep((100-elapsed) * 1000);
-                }
-                cycles = cycles - cycles_100_ms;
-                break;
-            }
-        }
-    }
+	while (true)
+	{
+		cycles += cbm64->Cycle();
+		if (cycles >= cyclesInFrame)
+		{
+			remainingCycles = cycles - cyclesInFrame;
+			break;
+		}
+	}
 }
 
 
