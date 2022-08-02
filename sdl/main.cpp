@@ -440,12 +440,16 @@ void DrawScreenLine(unsigned int lineNumber)
 {
 	// TODO: Figure out this number!
 #define SCREEN_START_FIELD_LINE 51
-	if (lineNumber < SCREEN_START_FIELD_LINE)
+	int screenLineNumber = lineNumber - SCREEN_START_FIELD_LINE;
+	if (screenLineNumber < 0)
 	{
 		return;
 	}
 
-	lineNumber -= SCREEN_START_FIELD_LINE;
+	if (screenLineNumber >= SCREEN_HEIGHT)
+	{
+		return;
+	}
 
 	auto bus = CBus::GetInstance();
 	auto vic = cbm64->GetVic();
@@ -454,7 +458,7 @@ void DrawScreenLine(unsigned int lineNumber)
 	u16 vicCharacterMemoryStartAddress = vicMemoryBankStartAddress + vic->GetCharacterMemoryOffset();
 
 	SDL_Rect rect;
-	rect.y = lineNumber;
+	rect.y = screenLineNumber;
 	rect.h = 1;
 
 	rect.x = 0;
@@ -466,8 +470,8 @@ void DrawScreenLine(unsigned int lineNumber)
 
 	rect.w = 0;
 
-	unsigned int rowIndex = lineNumber / CHARACTER_HEIGHT;
-	unsigned int characterRowIndex = lineNumber % CHARACTER_HEIGHT;
+	unsigned int rowIndex = screenLineNumber / CHARACTER_HEIGHT;
+	unsigned int characterRowIndex = screenLineNumber % CHARACTER_HEIGHT;
 
 	// 1 column (1 byte) per cycle.
 	for (unsigned int columnIndex = 0; columnIndex < SCREEN_CHAR_WIDTH; ++columnIndex)
