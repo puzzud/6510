@@ -20,6 +20,8 @@
 
 class CMOS6526CIA2 : public CDevice{
 private:
+	u8 mRegs[0xDD0F-0xDD00];
+
 	CBus* mBus;
 	BKE_MUTEX mMutex;
 protected:

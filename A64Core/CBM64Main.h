@@ -48,12 +48,14 @@ class CBM64Main{
 		int SetDisassemble(int d);
 		int GetDisassemble();
 		
+		CMOS6510* GetCpu();
 		CMOS6569* GetVic();
 		CMOS6526CIA1* GetCia1();
 		CMOS6526CIA2* GetCia2();
 		CCharRom* GetCharRom();
 
 		int LoadApp(char* fname);
+		int LoadAppWithoutBasic(char* fname);
 		int LoadBasic(char* fname);
 		
 		void SetHiresTimeProvider(CHiresTime* hTime);

@@ -13,6 +13,9 @@
 
 CMOS6526CIA2::CMOS6526CIA2(BKE_MUTEX mutex){
     mMutex = mutex;
+
+	memset(mRegs, 0xFF, 0xDD0F-0xDD00); // 0xFF is a default value that will at least set VIC bank 0.
+
 	mBus = CBus::GetInstance();
 	mBus->Register(eBusCia2,this, 0xDD00, 0xDDFF);
 }
@@ -28,12 +31,21 @@ void CMOS6526CIA2::Cycle(){
 }
 
 u8 CMOS6526CIA2::Peek(u16 address){
-	return 0xFF;
+	if(address > 0xDD0F){
+		cout << "CMOS6526CIA2::Peek: Bad address without mirroring: " << std::hex << address << endl;
+	}
+
+	return mRegs[address-0xDD00];
 }
 
 
 int CMOS6526CIA2::Poke(u16 address, u8 val){
-    mBus->PokeDevice(eBusRam,address,val);
+	if(address > 0xDD0F){
+		cout << "CMOS6526CIA2::Peek: Bad address without mirroring: " << std::hex << address << endl;
+	}
+
+	mRegs[address-0xDD00] = val;
+	
 	return 0;
 }	
 

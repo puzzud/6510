@@ -34,6 +34,11 @@ int CRam::Poke(u16 address, u8 val){
 	return 0;
 }
 
+int CRam::PokeBlock(u16 address, u8* memory, u16 size){
+	memcpy(mRam+address, memory, size);
+	return 0;
+}
+
 int CRam::LoadBasic(char* fname){
 	u8* m;
 	u16 a;

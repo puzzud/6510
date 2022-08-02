@@ -33,10 +33,15 @@ int CBM64Main::Init(){
 
 
 int CBM64Main::Cycle(){
-    mVic->Cycle();
-	int cycles = mProcessor->Cycle();
-    mCia1->Cycle();
-    mCia2->Cycle();
+	mProcessor->SetIRQ(mVic->GetIRQ() || mCia1->GetIRQ());
+    int cycles = mProcessor->Cycle();
+
+	for (int i = 0; i < cycles; ++i){
+		mVic->Cycle();
+		mCia1->Cycle();
+		mCia2->Cycle();
+	}
+
     return cycles;
 }
 
@@ -51,6 +56,10 @@ int CBM64Main::Stop(){
 	delete mCharRom;
 	delete mSid;
 	return 0;
+}
+
+CMOS6510* CBM64Main::GetCpu(){
+	return mProcessor;
 }
 
 CMOS6569* CBM64Main::GetVic(){
@@ -82,6 +91,34 @@ int CBM64Main::GetDisassemble(){
 
 int CBM64Main::LoadApp(char* fname){
 	return mRam->LoadApp(fname);
+}
+
+
+int CBM64Main::LoadAppWithoutBasic(char* fname){
+	ifstream file(fname, ios::in|ios::binary|ios::ate);
+	if (file.is_open()){
+		unsigned int fileSize = file.tellg();
+		cout << "File Size: " << fileSize << endl;
+		file.seekg(0, ios::beg);
+
+		u16 startAddress;
+		file.read((char*)&startAddress, 2);
+		cout << std::hex << "Start Address:  " << startAddress << endl << std::dec;
+
+		u8* m = new u8[fileSize - 2];
+		file.read((char*)m, fileSize - 2);
+		file.close();
+		
+		mRam->PokeBlock(startAddress, m, fileSize - 2);
+
+		delete m;
+		m = NULL;
+	}else{
+		cout << "Could not load file : " << fname << endl;
+		return -1;
+	}
+
+	return 0;
 }
 
 

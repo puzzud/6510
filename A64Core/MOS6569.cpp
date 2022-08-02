@@ -24,8 +24,16 @@ static char CMOS6569TextMap[128] =
 
 
 CMOS6569::CMOS6569(){
-	chipMemoryControlRegister = 0;
+	memset(mRegs, 0, 47);
 	memset(mColorRam, 0, (0xDBFF-0xD800));
+
+	irq = false;
+
+	rasterLine = 0;
+	perLineClockCycle = 0;
+
+	rasterLineCompare = 0;
+
 	mBus = CBus::GetInstance(); 
 	mBus->Register(eBusVic, this, 0xD000, 0xD3FF);
 }
@@ -39,6 +47,26 @@ u8 CMOS6569::GetDeviceID(){
 }
 
 void CMOS6569::Cycle(){
+	if (++perLineClockCycle == NTSC_FIELD_CYCLES_PER_LINE){
+		perLineClockCycle = 0;
+
+		// TODO: Should this be called here or at a different point in time?
+		if (rasterLine == rasterLineCompare){
+			mRegs[0xD019 - 0xD000] |= 0x81; // Mark possible interrupt flags.
+		}
+
+		if (mRenderer != NULL){
+			mRenderer->OnRasterLineCompleted((unsigned int)rasterLine);
+		}
+
+		if (++rasterLine == NTSC_FIELD_LINE_HEIGHT + 1){
+			rasterLine = 0;
+		}
+	}
+
+	bool rasterLineCompareIrqEnabled = (mRegs[0xD01A - 0xD000] & 0x01) != 0;
+	bool rasterLineCompareMatched = (mRegs[0xD019 - 0xD000] & 0x01) != 0;
+	irq = rasterLineCompareIrqEnabled && rasterLineCompareMatched;
 }
 
 u8 CMOS6569::Peek(u16 address){
@@ -50,11 +78,23 @@ u8 CMOS6569::Peek(u16 address){
 		// but for now it is AND'd out.
 		return mColorRam[address-0xD800] & 0x0F;
 	}
-	if(address == 0xD012){
-		return 0;
-	}
-	if(address == 0xD018){
-		return chipMemoryControlRegister;
+
+	// TODO: Implement mirroring.
+	if(address >= 0xD000 && address <= (0xD000 + 47)){
+		if(address == 0xD011){
+			u8 val = mRegs[address-0xD000];
+
+			// Bit 7 is different when read,
+			// and is based on current position
+			// of raster line;
+			val &= 0x7F;
+			val |= (rasterLine >> 1) & 0x80;
+			return val;
+		}else if (address == 0xD012){
+			return (u8)(rasterLine & 0xFF);
+		}
+
+		return mRegs[address - 0xD000];
 	}
 	
 	return 0xff;
@@ -64,23 +104,40 @@ u8 CMOS6569::Peek(u16 address){
 int CMOS6569::Poke(u16 address, u8 val){
 	if (address >= 0xD800 && address <= 0xDBFF){
 		mColorRam[address - 0xD800] = val;
-	}
-	else if(address == 0xD018){
-		chipMemoryControlRegister = val;
-	}
-	else if (address == 0xD020){
-		mRenderer->SetBorderColor(val);
-	}
-	else if (address == 0xD021){
-		mRenderer->SetBackgroundColor(val);
+	}else if(address >= 0xD000 && address <= (0xD000 + 47)){
+		// TODO: Implement mirroring.
+
+		if (address == 0xD011){
+			rasterLineCompare = (rasterLineCompare & 0xFF) | ((val & 0x80) << 1);
+		}else if (address == 0xD012){
+			rasterLineCompare = (rasterLineCompare & 0x100) | val;
+		}else if (address == 0xD019){
+			u8 previousVal = mRegs[address - 0xD000];
+			val = previousVal & ~(val & 0x0F);
+			val &= 0x7F;
+			if ((val & 0x0F) != 0){
+				val |= 0x80;
+			}
+		}else if (address == 0xD020){
+			mRenderer->SetBorderColor(val);
+		}else if (address == 0xD021){
+			mRenderer->SetBackgroundColor(val);
+		}
+
+		mRegs[address - 0xD000] = val;
 	}
 
 	return 0;
 }
 
 
+bool CMOS6569::GetIRQ(){
+	return irq;
+}
+
+
 u16 CMOS6569::GetCharacterMemoryOffset(){
-	u8 vicCharacterMemoryBankIndex = (chipMemoryControlRegister >> 1) & 0x03;
+	u8 vicCharacterMemoryBankIndex = (chipMemoryControlRegister >> 1) & 0x07;
 	return vicCharacterMemoryBankIndex * CHARACTER_MEMORY_BANK_SIZE;
 }
 
