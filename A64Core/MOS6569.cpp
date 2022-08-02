@@ -50,6 +50,11 @@ void CMOS6569::Cycle(){
 	if (++perLineClockCycle == NTSC_FIELD_CYCLES_PER_LINE){
 		perLineClockCycle = 0;
 
+		// TODO: Should this be called here or at a different point in time?
+		if (rasterLine == rasterLineCompare){
+			mRegs[0xD019 - 0xD000] |= 0x81; // Mark possible interrupt flags.
+		}
+
 		if (mRenderer != NULL){
 			mRenderer->OnRasterLineCompleted((unsigned int)rasterLine);
 		}
@@ -57,10 +62,6 @@ void CMOS6569::Cycle(){
 		if (++rasterLine == NTSC_FIELD_LINE_HEIGHT + 1){
 			rasterLine = 0;
 		}
-	}
-
-	if (rasterLine == rasterLineCompare){
-		mRegs[0xD019 - 0xD000] |= 0x81; // Mark possible interrupt flags.
 	}
 
 	bool rasterLineCompareIrqEnabled = (mRegs[0xD01A - 0xD000] & 0x01) != 0;
