@@ -68,6 +68,8 @@ class CMOS6569 : public CDevice{
 		u16 rasterLine;
 		u8 perLineClockCycle;
 
+		u16 rasterLineCompare = 0;
+
 		CBus* mBus;
 		CVICHWScreen* mRenderer;
 	protected:
