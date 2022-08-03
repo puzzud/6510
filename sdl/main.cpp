@@ -9,6 +9,7 @@
 #include <stdio.h>
 #include <signal.h>
 #include <stdlib.h>
+#include <map>
 
 #include <SDL2/SDL.h>
 
@@ -67,8 +68,26 @@ SDL_Point RenderScale;
 SDL_Color Colors[NUMBER_OF_COLORS];
 SDL_Texture* CharacterSetTexture;
 
+unsigned int keysetMode = 0;
+
 bool _run = true;
 uint64_t remainingCycles = 0;
+
+typedef struct _CiaKeyboardMatrixPair{
+	u8 row;
+	u8 column;
+} CiaKeyboardMatrixPair;
+
+std::map<SDL_Keycode, CiaKeyboardMatrixPair> SdlKeyCodeToCiaKeyMatrixMap {
+	{SDLK_DOWN, {0, 7}}, {SDLK_F5, {0, 6}}, {SDLK_F3, {0, 5}}, {SDLK_F1, {0, 4}}, {SDLK_F7, {0, 3}}, {SDLK_RIGHT, {0, 2}}, {SDLK_RETURN, {0, 1}}, {SDLK_BACKSPACE, {0, 0}},
+	{SDLK_LSHIFT, {1, 7}}, {SDLK_e, {1, 6}}, {SDLK_s, {1, 5}}, {SDLK_z, {1, 4}}, {SDLK_4, {1, 3}}, {SDLK_a, {1, 2}}, {SDLK_w, {1, 1}}, {SDLK_3, {1, 0}},
+	{SDLK_x, {2, 7}}, {SDLK_t, {2, 6}}, {SDLK_f, {2, 5}}, {SDLK_c, {2, 4}}, {SDLK_6, {2, 3}}, {SDLK_d, {2, 2}}, {SDLK_r, {2, 1}}, {SDLK_5, {2, 0}},
+	{SDLK_v, {3, 7}}, {SDLK_u, {3, 6}}, {SDLK_h, {3, 5}}, {SDLK_b, {3, 4}}, {SDLK_8, {3, 3}}, {SDLK_g, {3, 2}}, {SDLK_y, {3, 1}}, {SDLK_7, {3, 0}},
+	{SDLK_n, {4, 7}}, {SDLK_o, {4, 6}}, {SDLK_k, {4, 5}}, {SDLK_m, {4, 4}}, {SDLK_0, {4, 3}}, {SDLK_j, {4, 2}}, {SDLK_i, {4, 1}}, {SDLK_9, {4, 0}},
+	{SDLK_COMMA, {5, 7}}, {SDLK_PAGEUP, {5, 6}}, {SDLK_SEMICOLON, {5, 5}}, {SDLK_PERIOD, {5, 4}}, {SDLK_MINUS, {5, 3}}, {SDLK_l, {5, 2}}, {SDLK_p, {5, 1}}, {SDLK_LEFTBRACKET, {5, 0}},
+	{SDLK_SLASH, {6, 7}}, {SDLK_TAB, {6, 6}}, {SDLK_EQUALS, {6, 5}}, {SDLK_RSHIFT, {6, 4}}, {SDLK_HOME, {6, 3}}, {SDLK_QUOTE, {6, 2}}, {SDLK_RIGHTBRACKET, {6, 1}}, {SDLK_PAGEDOWN, {6, 0}},
+	{SDLK_ESCAPE, {7, 7}}, {SDLK_q, {7, 6}}, {SDLK_LALT, {7, 5}}, {SDLK_SPACE, {7, 4}}, {SDLK_2, {7, 3}}, {SDLK_LCTRL, {7, 2}}, {SDLK_BACKQUOTE, {7, 1}}, {SDLK_1, {7, 0}}
+};
 
 uint64_t now() {
     uint64_t now = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
@@ -303,6 +322,7 @@ void OnInputEvent(SDL_Event* event)
 
 void OnInputKeyEvent(SDL_Event* event, unsigned int isDown)
 {
+	/*
 	switch (event->type)
 	{
 		case SDL_KEYDOWN:
@@ -360,7 +380,71 @@ void OnInputKeyEvent(SDL_Event* event, unsigned int isDown)
 		{
 			if (event->key.repeat == 0)
 			{
-				
+
+			}
+
+			break;
+		}
+	}
+	*/
+
+	switch (event->type)
+	{
+		case SDL_KEYDOWN:
+		case SDL_KEYUP:
+		{
+			if (event->key.repeat == 0)
+			{
+				auto keyCode = event->key.keysym.sym;
+
+				if (event->type == SDL_KEYDOWN && keyCode == SDLK_F9){
+					// Increment keyset mode.
+					keysetMode = (keysetMode + 1) % 3;
+					cout << "Keyset Mode: " << keysetMode << endl;
+					return;
+				}
+
+				if (keysetMode == 1 || keysetMode == 2)
+				{
+					// Keyboard controls joystick 1 or 2.
+					int buttonId = -1;
+					if (keyCode == SDLK_UP)
+					{
+						buttonId = 0;
+					}
+					else if (keyCode == SDLK_DOWN)
+					{
+						buttonId = 1;
+					}
+					else if (keyCode == SDLK_LEFT)
+					{
+						buttonId = 2;
+					}
+					else if (keyCode == SDLK_RIGHT)
+					{
+						buttonId = 3;
+					}
+					else if (keyCode == SDLK_SPACE)
+					{
+						buttonId = 4;
+					}
+
+					if (buttonId > -1)
+					{
+						cbm64->GetCia1()->SetJoystickState(keysetMode - 1, buttonId, event->type == SDL_KEYDOWN);
+						return;
+					}
+				}
+
+				// Keyboard is keyboard (keysetMode 0 and fall through behavior).
+				auto it = SdlKeyCodeToCiaKeyMatrixMap.find(keyCode);
+				if (it != SdlKeyCodeToCiaKeyMatrixMap.cend())
+				{
+					auto ciaKeyboardMatrixPair = &it->second;
+					ciaKeyboardMatrixPair->row;
+					ciaKeyboardMatrixPair->column;
+					cbm64->GetCia1()->SetKeyState(ciaKeyboardMatrixPair->row, ciaKeyboardMatrixPair->column, event->type == SDL_KEYDOWN);
+				}
 			}
 
 			break;
@@ -370,6 +454,7 @@ void OnInputKeyEvent(SDL_Event* event, unsigned int isDown)
 
 void OnInputTextInputEvent(SDL_Event* event)
 {
+	/*
     char keySymbol = event->text.text[0];
     //cout << "Text Input: " << char(keySymbol) << endl;
 
@@ -380,7 +465,8 @@ void OnInputTextInputEvent(SDL_Event* event)
         keyStroke = keySymbol + 'A' - 'a';
     }
 
-    cbm64->GetCia1()->AddKeyStroke(char(keyStroke));
+    //cbm64->GetCia1()->AddKeyStroke(char(keyStroke));
+	*/
 }
 
 void InitializeColors(void)

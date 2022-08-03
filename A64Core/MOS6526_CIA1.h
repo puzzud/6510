@@ -22,10 +22,18 @@ class CMOS6526CIA1 : public CDevice{
 private:
 	bool irq;
 
+	u8 pra;
+	u8 prb;
+	u8 ddra;
+	u8 ddrb;
+
 	bool timerAEnabled;
 	bool timerACompleted;
 	bool timerAIrqEnabled;
 	int prevIrqTime;
+
+	u8 keyboardMatrix[8];
+	u8 joystickStates[2];
 
 	CBus* mBus;
 
@@ -44,6 +52,9 @@ public:
 	bool GetIRQ();
 
 	int AddKeyStroke(char c);
+
+	int SetKeyState(u8 row, u8 column, bool keyStateDown);
+	int SetJoystickState(u8 joystickIndex, u8 buttonIndex, bool buttonStateDown);
 };
 
 
