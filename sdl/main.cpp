@@ -68,6 +68,8 @@ SDL_Point RenderScale;
 SDL_Color Colors[NUMBER_OF_COLORS];
 SDL_Texture* CharacterSetTexture;
 
+unsigned int keysetMode = 0;
+
 bool _run = true;
 uint64_t remainingCycles = 0;
 
@@ -394,6 +396,47 @@ void OnInputKeyEvent(SDL_Event* event, unsigned int isDown)
 			if (event->key.repeat == 0)
 			{
 				auto keyCode = event->key.keysym.sym;
+
+				if (event->type == SDL_KEYDOWN && keyCode == SDLK_F9){
+					// Increment keyset mode.
+					keysetMode = (keysetMode + 1) % 3;
+					cout << "Keyset Mode: " << keysetMode << endl;
+					return;
+				}
+
+				if (keysetMode == 1 || keysetMode == 2)
+				{
+					// Keyboard controls joystick 1 or 2.
+					int buttonId = -1;
+					if (keyCode == SDLK_UP)
+					{
+						buttonId = 0;
+					}
+					else if (keyCode == SDLK_DOWN)
+					{
+						buttonId = 1;
+					}
+					else if (keyCode == SDLK_LEFT)
+					{
+						buttonId = 2;
+					}
+					else if (keyCode == SDLK_RIGHT)
+					{
+						buttonId = 3;
+					}
+					else if (keyCode == SDLK_SPACE)
+					{
+						buttonId = 4;
+					}
+
+					if (buttonId > -1)
+					{
+						cbm64->GetCia1()->SetJoystickState(keysetMode - 1, buttonId, event->type == SDL_KEYDOWN);
+						return;
+					}
+				}
+
+				// Keyboard is keyboard (keysetMode 0 and fall through behavior).
 				auto it = SdlKeyCodeToCiaKeyMatrixMap.find(keyCode);
 				if (it != SdlKeyCodeToCiaKeyMatrixMap.cend())
 				{

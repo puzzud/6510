@@ -33,6 +33,7 @@ private:
 	int prevIrqTime;
 
 	u8 keyboardMatrix[8];
+	u8 joystickStates[2];
 
 	CBus* mBus;
 
@@ -52,7 +53,8 @@ public:
 
 	int AddKeyStroke(char c);
 
-	int SetKeyState(unsigned int row, unsigned int column, bool keyStateDown);
+	int SetKeyState(u8 row, u8 column, bool keyStateDown);
+	int SetJoystickState(u8 joystickIndex, u8 buttonIndex, bool buttonStateDown);
 };
 
 

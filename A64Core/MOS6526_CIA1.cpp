@@ -31,6 +31,7 @@ CMOS6526CIA1::CMOS6526CIA1(BKE_MUTEX mutex){
 	mBus->Register(eBusCia1,this, 0xDC00, 0xDCFF);
 
 	memset(keyboardMatrix, 0xFF, 8);
+	memset(joystickStates, 0XFF, 8);
 
 	timerAEnabled = false;
 	timerACompleted = false;
@@ -64,28 +65,35 @@ void CMOS6526CIA1::Cycle(){
 
 u8 CMOS6526CIA1::Peek(u16 address){
 	if(address == 0xDC00){
-		if(ddra != 0){
-			return 0xFF;
-		}
-		
-		return 0xFF;
+		// TODO: Checking ddra != 0
+		// doesn't work in practice. Why?
+		return joystickStates[1];
 	}else if(address == 0xDC01){
 		if(ddrb != 0){
 			return 0xFF;
 		}
 
 		if(pra == 0xFF){
-			return 0xFF;
+			// pra 0xFF with ddrb 0 will block keyboard input.
+			// But it doesn't block joystick 1.
+			// If joystick states is not returned, it was
+			// good to return 0xFF.
+			return joystickStates[0];
 		}
 
 		u8 row = 0;
 
 		if (pra == 0x00){
+			// Scan all rows together.
+			// Checking for any key presses.
 			u8 val = 0xFF;
 
 			for(; row < 8; ++row){
 				val &= keyboardMatrix[row];
 			}
+
+			// Joystick 1 input gets tied into this.
+			val &= joystickStates[0];
 
 			return val;
 		}
@@ -95,7 +103,7 @@ u8 CMOS6526CIA1::Peek(u16 address){
 			++row;
 		}
 
-		return keyboardMatrix[row];
+		return keyboardMatrix[row] & joystickStates[0];
 	}else if(address == 0xDC02){
 		return ddra;
 	}else if(address == 0xDC03){
@@ -162,7 +170,7 @@ int CMOS6526CIA1::AddKeyStroke(char c){
 	return 0;
 }
 
-int CMOS6526CIA1::SetKeyState(unsigned int row, unsigned int column, bool keyStateDown){
+int CMOS6526CIA1::SetKeyState(u8 row, u8 column, bool keyStateDown){
 	if(row > 7){
 		return -1;
 	}
@@ -172,6 +180,21 @@ int CMOS6526CIA1::SetKeyState(unsigned int row, unsigned int column, bool keySta
 		keyboardMatrix[row] &= ~(1 << column);
 	}else{
 		keyboardMatrix[row] |= (1 << column);
+	}
+
+	return 0;
+}
+
+int CMOS6526CIA1::SetJoystickState(u8 joystickIndex, u8 buttonIndex, bool buttonStateDown){
+	if(joystickIndex > 1){
+		return -1;
+	}
+
+	// Joystick state is active low.
+	if(buttonStateDown){
+		joystickStates[joystickIndex] &= ~(1 << buttonIndex);
+	}else{
+		joystickStates[joystickIndex] |= (1 << buttonIndex);
 	}
 
 	return 0;
