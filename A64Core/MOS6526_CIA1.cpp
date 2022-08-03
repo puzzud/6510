@@ -21,9 +21,16 @@ CMOS6526CIA1::CMOS6526CIA1(BKE_MUTEX mutex){
 	mMutex = mutex;
 
 	irq = false;
+
+	pra = 0xFF;
+	prb = 0xFF;
+	ddra = 0xFF;
+	ddrb = 0xFF;
 	
 	mBus = CBus::GetInstance();
 	mBus->Register(eBusCia1,this, 0xDC00, 0xDCFF);
+
+	memset(keyboardMatrix, 0xFF, 8);
 
 	timerAEnabled = false;
 	timerACompleted = false;
@@ -56,10 +63,50 @@ void CMOS6526CIA1::Cycle(){
 }
 
 u8 CMOS6526CIA1::Peek(u16 address){
-	if(address == 0xDC0D){
+	if(address == 0xDC00){
+		if(ddra != 0){
+			return 0xFF;
+		}
+		
+		return 0xFF;
+	}else if(address == 0xDC01){
+		if(ddrb != 0){
+			return 0xFF;
+		}
+
+		u8 row = 0;
+
+		// TODO: What should pra == 0xFF do?
+		if (pra == 0x00){// || pra == 0xFF){
+			u8 val = 0xFF;
+
+			for(; row < 8; ++row){
+				val &= keyboardMatrix[row];
+			}
+
+			return val;
+		}
+		
+		u8 val = (~pra) & 0xFF;
+		while (val >>= 1){
+			++row;
+		}
+
+		//if(~keyboardMatrix[row] & 0x01){
+		//	cout << int(row) << ":" << int(keyboardMatrix[row]) << endl;
+		//}
+
+		return keyboardMatrix[row];
+	}else if(address == 0xDC02){
+		return ddra;
+	}else if(address == 0xDC03){
+		return ddrb;
+	}else if(address == 0xDC0D){
 		u8 val = timerACompleted ? 1 : 0;
 
 		timerACompleted = false; // Reset when read.
+
+		// TODO: Should this return something special (not zero)?
 	}
 
 	return 0;
@@ -67,7 +114,21 @@ u8 CMOS6526CIA1::Peek(u16 address){
 
 
 int CMOS6526CIA1::Poke(u16 address, u8 val){
-	if(address == 0xDC0D){
+	if(address == 0xDC00){
+		cout << "pra write: " << std::hex << int(val) << " ddra: " << int(ddra) << std::dec << endl;
+		if(ddra == 0xFF){
+			pra = val;
+		}
+	}else if(address == 0xDC01){
+		//cout << "prb write: " << std::hex << int(val) << " ddrb: " << int(ddra) << std::dec << endl;
+		if(ddrb == 0xFF){
+			prb = val;
+		}
+	}else if(address == 0xDC02){
+		ddra = val;
+	}else if(address == 0xDC03){
+		ddrb = val;
+	}else if(address == 0xDC0D){
 		if((val & 0x80) != 0){
 			timerAIrqEnabled = (val & 0x01) != 0;
 		}else{
@@ -104,4 +165,19 @@ int CMOS6526CIA1::AddKeyStroke(char c){
 	return 0;
 }
 
+int CMOS6526CIA1::SetKeyState(unsigned int row, unsigned int column, bool keyStateDown){
+	if(row > 7){
+		return -1;
+	}
 
+	// Keyboard matrix is active low.
+	if(keyStateDown){
+		keyboardMatrix[row] &= ~(1 << column);
+	}else{
+		keyboardMatrix[row] |= (1 << column);
+	}
+
+	//cout << int(keyboardMatrix[row]) << endl;
+
+	return 0;
+}
