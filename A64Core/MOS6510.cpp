@@ -371,7 +371,8 @@ CMOS6510::CMOS6510(BKE_MUTEX mutex){
 	
 	mOpcodeDebug = new CMOS6510Debug();
 
-	
+	mWatcher = NULL;
+	mHiresTime = NULL;
 }
 
 
@@ -379,6 +380,11 @@ CMOS6510::CMOS6510(BKE_MUTEX mutex){
 CMOS6510::~CMOS6510(){
 	delete mOpcodeDebug;
 
+}
+
+
+void CMOS6510::SetWatcher(CWatcher* watcher){
+	mWatcher = watcher;
 }
 
 
@@ -1170,6 +1176,10 @@ void CMOS6510::F_JMP(u8 addressmode){
 	
 	GetOperandAddress(addressmode, &address);	
 	r_pc = address;
+
+	if (mWatcher != NULL){
+		mWatcher->CheckJumpWatch(r_pc, eWatcherJump);
+	}
 }
 
 
@@ -1185,6 +1195,9 @@ void CMOS6510::F_JSR(u8 addressmode){
 
 	r_pc = address;
 
+	if (mWatcher != NULL){
+		mWatcher->CheckJumpWatch(address, eWatcherJumpRoutine);
+	}
 }
 
 /*
@@ -1800,6 +1813,9 @@ void CMOS6510::IRQ(){
     _cycles += 7;
 //timer50Hz := timer50Hz+20
      
+	if (mWatcher != NULL){
+		mWatcher->CheckJumpWatch(r_pc, eWatcherJumpInterrupt);
+	}
 }
 
 void CMOS6510::NMI(){
@@ -1809,4 +1825,8 @@ void CMOS6510::NMI(){
 	SETFLAG(FLAG_I);
 	r_pc=mBus->Peek16(0xFFFA);
     _cycles += 7;
+
+	if (mWatcher != NULL){
+		mWatcher->CheckJumpWatch(r_pc, eWatcherJumpInterrupt);
+	}
 }

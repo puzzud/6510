@@ -16,7 +16,7 @@
 #include "MOS6510Debug.h"
 #include "Bus.h"
 #include "General.h"
-
+#include "Watcher.h"
 
 
 class CMOS6510;
@@ -206,6 +206,7 @@ private:
 	void PrintOperands(u8 addressMode, u16 pc);
 	void PrintStatusBits();
 
+	CWatcher* mWatcher;
 	CHiresTime* mHiresTime;
 
 //#ifdef DEBUG_CONSISTENCY_CHECK	
@@ -232,7 +233,9 @@ public:
 
 	bool DBGRunOneInstruction(u16* pc, u16* sp, u8* a, u8* x, u8* y, u8* p);
 	void DBGTraceLine(u8 cmd, u16 prevPC);
+
 	void SetHiresTime(CHiresTime* hiresTime);
+	void SetWatcher(CWatcher* watcher);
     
     uint64_t GetCycles();
 

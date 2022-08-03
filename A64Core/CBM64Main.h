@@ -22,6 +22,7 @@
 #include "MOS6581.h"
 #include "CharRom.h"
 #include "General.h"
+#include "Watcher.h"
 #include <thread>
 
 class CBM64Main{
@@ -55,13 +56,13 @@ class CBM64Main{
 		CCharRom* GetCharRom();
 
 		int LoadApp(char* fname);
-		int LoadAppWithoutBasic(char* fname);
+		int LoadAppWithoutBasic(const char* fname);
 		int LoadBasic(char* fname);
 		
+		void SetWatcher(CWatcher* watcher);
 		void SetHiresTimeProvider(CHiresTime* hTime);
 
         uint64_t GetCycles();
-        
 };
 
 #endif

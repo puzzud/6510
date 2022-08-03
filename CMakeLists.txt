@@ -26,6 +26,7 @@ set(SRC
     A64Core/MOS6581.cpp
     A64Core/Ram.cpp
     A64Core/Util.cpp 
+    A64Core/Watcher.cpp
     main.cpp)
 
 add_custom_command(OUTPUT roms.o

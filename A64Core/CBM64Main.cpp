@@ -94,7 +94,7 @@ int CBM64Main::LoadApp(char* fname){
 }
 
 
-int CBM64Main::LoadAppWithoutBasic(char* fname){
+int CBM64Main::LoadAppWithoutBasic(const char* fname){
 	ifstream file(fname, ios::in|ios::binary|ios::ate);
 	if (file.is_open()){
 		unsigned int fileSize = file.tellg();
@@ -127,6 +127,11 @@ int CBM64Main::LoadBasic(char* fname){
 }
 
 
+void CBM64Main::SetWatcher(CWatcher* watcher){
+	mProcessor->SetWatcher(watcher);
+}
+
+
 void CBM64Main::SetHiresTimeProvider(CHiresTime* hTime){
 	mProcessor->SetHiresTime(hTime);
 }
@@ -134,6 +139,3 @@ void CBM64Main::SetHiresTimeProvider(CHiresTime* hTime){
 uint64_t CBM64Main::GetCycles(){
     return mProcessor->GetCycles();
 }
-
-
-
