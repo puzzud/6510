@@ -592,43 +592,24 @@ void DrawScreenLine(unsigned int lineNumber)
 	u8 spriteEnable = bus->PeekDevice(eBusVic, 0xD015);
 	if (spriteEnable != 0)
 	{
-		u8 spriteXPositionMsbs = bus->PeekDevice(eBusVic, 0xD010);
-		u8 spriteXExpands = bus->PeekDevice(eBusVic, 0xD01D);
-		u8 spriteYExpands = bus->PeekDevice(eBusVic, 0xD017);
-
 		// Process sprites in reverse order to account for sprite priority.
-		for (int spriteIndex = 8 - 1; spriteIndex > -1; --spriteIndex)
+		for (int spriteIndex = NUMBER_OF_HARDWARE_SPRITES - 1; spriteIndex > -1; --spriteIndex)
 		{
-			if ((spriteEnable & (1 << spriteIndex)) == 0)
+			if (!vic->IsSpriteEnabled(spriteIndex))
 			{
 				continue;
 			}
 
-			u8 spriteYPosition = bus->PeekDevice(eBusVic, 0xD001 + (spriteIndex * 2));
-			unsigned int spriteHeight = 21;
-			if ((spriteYExpands & (1 << spriteIndex)) != 0)
+			if (vic->IsSpriteOnLine(spriteIndex, lineNumber))
 			{
-				spriteHeight *= 2;
-			}
+				//u8 spriteYPosition = vic->GetSpriteYPosition(spriteIndex);
+				//u8 spriteHeight = vic->GetSpriteHeight(spriteIndex);
 
-			if (lineNumber >= spriteYPosition && lineNumber <= (spriteYPosition + spriteHeight))
-			{
-				u8 spriteXPositionLsb = bus->PeekDevice(eBusVic, 0xD000 + (spriteIndex * 2));
-
-				int spriteXPosition = spriteXPositionLsb;
-				if ((spriteXPositionMsbs & (1 << spriteIndex)) != 0)
-				{
-					spriteXPosition += 0x100;
-				}
-
+				int spriteXPosition = vic->GetSpriteXPosition(spriteIndex);
 				spriteXPosition -= 23; // Adjust for border and HBlank.
 
 				rect.x = spriteXPosition;
-				rect.w = 24;
-				if ((spriteXExpands & (1 << spriteIndex)) != 0)
-				{
-					rect.w *= 2;
-				}
+				rect.w = vic->GetSpriteWidth(spriteIndex);
 
 				u8 colorCode = bus->PeekDevice(eBusVic, 0xD027 + spriteIndex);
 				SDL_Color* color = &Colors[colorCode % 16];
