@@ -411,6 +411,7 @@ void OnInputKeyEvent(SDL_Event* event, unsigned int isDown)
 
 void OnInputTextInputEvent(SDL_Event* event)
 {
+	/*
     char keySymbol = event->text.text[0];
     //cout << "Text Input: " << char(keySymbol) << endl;
 
@@ -422,6 +423,7 @@ void OnInputTextInputEvent(SDL_Event* event)
     }
 
     //cbm64->GetCia1()->AddKeyStroke(char(keyStroke));
+	*/
 }
 
 void InitializeColors(void)
