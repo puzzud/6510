@@ -57,11 +57,13 @@ void DrawScreen();
 void DrawByte(u8 byte, u8 colorCode, u16 screenXPosition, u8 screenYPosition, unsigned int horizontalScale = 1);
 void DrawScreenLine(unsigned int lineNumber);
 
+class CustomWatcher;
 class HiresTimeImpl;
 class EMCScreen;
 
 CBM64Main* cbm64 = NULL;
 EMCScreen* emcScreen_ = NULL;
+CustomWatcher* watcher = NULL;
 
 SDL_Window* Window;
 SDL_Renderer* Renderer;
@@ -89,6 +91,29 @@ std::map<SDL_Keycode, CiaKeyboardMatrixPair> SdlKeyCodeToCiaKeyMatrixMap {
 	{SDLK_SLASH, {6, 7}}, {SDLK_TAB, {6, 6}}, {SDLK_EQUALS, {6, 5}}, {SDLK_RSHIFT, {6, 4}}, {SDLK_HOME, {6, 3}}, {SDLK_QUOTE, {6, 2}}, {SDLK_RIGHTBRACKET, {6, 1}}, {SDLK_PAGEDOWN, {6, 0}},
 	{SDLK_ESCAPE, {7, 7}}, {SDLK_q, {7, 6}}, {SDLK_LALT, {7, 5}}, {SDLK_SPACE, {7, 4}}, {SDLK_2, {7, 3}}, {SDLK_LCTRL, {7, 2}}, {SDLK_BACKQUOTE, {7, 1}}, {SDLK_1, {7, 0}}
 };
+
+
+class CustomWatcher : public CWatcher
+{
+    public:
+	protected:
+	virtual void ReportJumpWatch(u16 address, eWatcherJumpType jumpType)
+	{
+		cout << "Jump: " << std::hex << int(address) << std::dec << endl;
+
+		if (address == 0x655B)
+		{
+			if (cbm64->LoadAppWithoutBasic("/home/puzzud/temp/Desktop/m") == 0)
+			{
+				cout << "Loaded M" << endl;
+				cbm64->GetCpu()->SetPC(0x4000);
+				
+			}
+		}
+	};
+    private:
+};
+
 
 uint64_t now() {
     uint64_t now = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
@@ -197,9 +222,14 @@ int main(int argc, char* argv[]) {
     emcScreen_ = new EMCScreen();
     cbm64->GetVic()->RegisterHWScreen(emcScreen_);
 
+	watcher = new CustomWatcher();
+	cbm64->SetWatcher(watcher);
+
 	if (argc > 1)
 	{
 		cbm64->LoadAppWithoutBasic(argv[1]);
+
+		watcher->SetJumpWatch(0x655B);
 	}
 
 	if (argc > 2)
@@ -218,6 +248,12 @@ int main(int argc, char* argv[]) {
     SDL_DestroyWindow(Window);
 	SDL_DestroyRenderer(Renderer);
     SDL_Quit();
+
+	delete emcScreen_;
+	emcScreen_ = NULL;
+
+	delete watcher;
+	watcher = NULL;
 
 	return 0;
 #endif
