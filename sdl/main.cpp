@@ -54,7 +54,7 @@ void OnInputTextInputEvent(SDL_Event* event);
 void InitializeColors(void);
 void SetColorValuesFromInt(SDL_Color* color, unsigned int value);
 void DrawScreen();
-void DrawByte(u8 byte, u8 colorCode, u16 screenXPosition, u8 screenYPosition, unsigned int horizontalScale = 1);
+void DrawByte(u8 byte, u8 colorCode, u16 screenXPosition, u8 screenYPosition, bool multiColor = false, unsigned int horizontalScale = 1);
 void DrawScreenLine(unsigned int lineNumber);
 
 class HiresTimeImpl;
@@ -523,23 +523,79 @@ void DrawScreen()
 	}
 }
 
-void DrawByte(u8 byte, u8 colorCode, u16 screenXPosition, u8 screenYPosition, unsigned int horizontalScale)
+void DrawByte(u8 byte, u8 colorCode, u16 screenXPosition, u8 screenYPosition, bool multiColor, unsigned int horizontalScale)
 {
 	SDL_Rect rect;
 	rect.y = screenYPosition;
-	rect.w = horizontalScale;
+	rect.w = 1;
 	rect.h = 1;
 
-	for (int x = 0; x < 8; ++x)
-	{
-		if (byte & (1 << (8 - 1 - x)))
-		{
-			rect.x = screenXPosition + (x * horizontalScale);
+	static u8 pixelTransparencyBuffer[16]; // 16 bits in case of horizontal scaling.
+	static u8 pixelColorBuffer[16]; // 16 bits in case of horizontal scaling.
+	memset(pixelTransparencyBuffer, 0, 16);
+	memset(pixelColorBuffer, 0, 16);
 
-			SDL_Color* color = &Colors[colorCode % 16];
-			SDL_SetRenderDrawColor(Renderer, color->r, color->g, color->b, color->a);
-			SDL_RenderFillRect(Renderer, &rect);
+	int bufferIndex = (8 * horizontalScale) - 1;
+
+	for (int x = 0; x < 8; x += 2, byte >>= 2)
+	{
+		u8 bitPair = byte & 0x03;
+
+		if (multiColor)
+		{
+			if (bitPair == 0)
+			{
+				bufferIndex -= 2 * horizontalScale;
+				continue;
+			}
+			
+			for (int bitIndex = 0; bitIndex < 2; ++bitIndex)
+			{
+				for (int s = 0; s < horizontalScale; ++s, --bufferIndex)
+				{
+					pixelTransparencyBuffer[bufferIndex] = 1;
+					pixelColorBuffer[bufferIndex] = bitPair;
+				}
+			}
 		}
+		else
+		{
+			if (bitPair == 0)
+			{
+				bufferIndex -= 2 * horizontalScale;
+				continue;
+			}
+			
+			for (int bitIndex = 0; bitIndex < 2; ++bitIndex)
+			{
+				if ((bitPair & (1 << bitIndex)) == 0)
+				{
+					bufferIndex -= horizontalScale;
+					continue;
+				}
+
+				for (int s = 0; s < horizontalScale; ++s, --bufferIndex)
+				{
+					pixelTransparencyBuffer[bufferIndex] = 1;
+					pixelColorBuffer[bufferIndex] = colorCode;
+				}
+			}
+		}
+	}
+
+	for (int x = 0; x < (8 * horizontalScale); x += 1)
+	{
+		if (pixelTransparencyBuffer[x] == 0)
+		{
+			continue;
+		}
+
+		rect.x = screenXPosition + x;
+
+		u8 colorCode = pixelColorBuffer[x];
+		SDL_Color* color = &Colors[colorCode & 0x0F];
+		SDL_SetRenderDrawColor(Renderer, color->r, color->g, color->b, color->a);
+		SDL_RenderFillRect(Renderer, &rect);
 	}
 }
 
@@ -593,7 +649,7 @@ void DrawScreenLine(unsigned int lineNumber)
 		bus->SetMode(eBusModeVic);
 		unsigned char charRowByte = bus->Peek(vicCharacterMemoryStartAddress + characterRomCharOffset + characterRowIndex);
 
-		DrawByte(charRowByte, colorCode, (columnIndex * CHARACTER_WIDTH), rect.y);
+		DrawByte(charRowByte, colorCode, (columnIndex * CHARACTER_WIDTH), rect.y, false);
 	}
 
 	// Draw horizontal slices of sprite rectangles (for now).
@@ -634,7 +690,7 @@ void DrawScreenLine(unsigned int lineNumber)
 					bus->SetMode(eBusModeVic);
 					u8 spriteLineByte = bus->Peek(spriteDataAddress + byteIndex);
 
-					DrawByte(spriteLineByte, colorCode, rect.x, rect.y, spriteHorizontalScale);
+					DrawByte(spriteLineByte, colorCode, rect.x, rect.y, false, spriteHorizontalScale);
 
 					rect.x += 8 * spriteHorizontalScale;
 				}
