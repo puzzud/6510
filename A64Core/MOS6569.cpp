@@ -149,7 +149,72 @@ u16 CMOS6569::GetScreenMemoryOffset(){
 
 
 u16 CMOS6569::GetSpritePointersMemoryOffset(){
-	return GetScreenMemoryOffset() + SCREEN_MEMORY_BANK_SIZE - 8; // 8 is # of sprites.
+	return GetScreenMemoryOffset() + SCREEN_MEMORY_BANK_SIZE - NUMBER_OF_HARDWARE_SPRITES;
+}
+
+
+bool CMOS6569::IsSpriteEnabled(unsigned int spriteIndex){
+	u8 spriteEnable = Peek(0xD015);
+	return (spriteEnable & (1 << spriteIndex)) != 0;
+}
+
+
+u8 CMOS6569::GetSpritePointerValue(unsigned int spriteIndex){
+	u16 address = mBus->GetVicMemoryBankStartAddress() + GetSpritePointersMemoryOffset() + spriteIndex;
+
+	mBus->SetMode(eBusModeVic);
+	return mBus->Peek(address);
+}
+
+
+u16 CMOS6569::GetSpriteDataMemoryOffset(unsigned int spriteIndex){
+	return GetSpritePointerValue(spriteIndex) * HARDWARE_SPRITE_DATA_BLOCK_SIZE;
+}
+
+
+u16 CMOS6569::GetSpriteXPosition(unsigned int spriteIndex){
+	u8 spriteXPositionMsbs = Peek(0xD010);
+	u8 spriteXPositionLsb = Peek(0xD000 + (spriteIndex * 2));
+
+	u16 spriteXPosition = spriteXPositionLsb;
+	if ((spriteXPositionMsbs & (1 << spriteIndex)) != 0){
+		spriteXPosition += 0x100;
+	}
+
+	return spriteXPosition;
+}
+
+
+u8 CMOS6569::GetSpriteYPosition(unsigned int spriteIndex){
+	return Peek(0xD001 + (spriteIndex * 2));
+}
+
+
+unsigned int CMOS6569::GetSpriteHorizontalScale(unsigned int spriteIndex){
+	u8 spriteXExpands = Peek(0xD01D);
+	return ((spriteXExpands & (1 << spriteIndex)) != 0) ? 2 : 1;
+}
+
+
+unsigned int CMOS6569::GetSpriteVerticalScale(unsigned int spriteIndex){
+	u8 spriteYExpands = Peek(0xD017);
+	return ((spriteYExpands & (1 << spriteIndex)) != 0) ? 2 : 1;
+}
+
+
+u8 CMOS6569::GetSpriteWidth(unsigned int spriteIndex){
+	return HARDWARE_SPRITE_WIDTH * GetSpriteHorizontalScale(spriteIndex);
+}
+
+
+u8 CMOS6569::GetSpriteHeight(unsigned int spriteIndex){
+	return HARDWARE_SPRITE_HEIGHT * GetSpriteVerticalScale(spriteIndex);
+}
+
+
+bool CMOS6569::IsSpriteOnLine(unsigned int spriteIndex, unsigned int lineNumber){
+	u8 spriteYPosition = GetSpriteYPosition(spriteIndex);
+	return lineNumber >= spriteYPosition && lineNumber < (spriteYPosition + GetSpriteHeight(spriteIndex));
 }
 
 

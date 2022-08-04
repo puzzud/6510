@@ -32,12 +32,18 @@
 #define PIXELS_PER_CYCLE                     8
 #define SCREEN_CYCLES_PER_LINE               SCREEN_CHAR_WIDTH
 
+#define NUMBER_OF_HARDWARE_SPRITES           8
+#define HARDWARE_SPRITE_WIDTH                24
+#define HARDWARE_SPRITE_HEIGHT               21
+#define HARDWARE_SPRITE_BYTE_COUNT           63 /* 3 bytes per row. 21 rows */
+#define HARDWARE_SPRITE_DATA_BLOCK_SIZE      (HARDWARE_SPRITE_BYTE_COUNT + 1) /* 64 */
+
 #define NTSC_FIELD_CYCLES_PER_LINE           65
-#define NTSC_FIELD_LINE_WIDTH                520 // NTSC_FIELD_CYCLES_PER_LINE * PIXELS_PER_CYCLE
+#define NTSC_FIELD_LINE_WIDTH                520 /* NTSC_FIELD_CYCLES_PER_LINE * PIXELS_PER_CYCLE */
 #define NTSC_FIELD_LINE_HEIGHT               263
 
 #define PAL_FIELD_CYCLES_PER_LINE            63
-#define PAL_FIELD_LINE_WIDTH                 504 // PAL_FIELD_CYCLES_PER_LINE * PIXELS_PER_CYCLE
+#define PAL_FIELD_LINE_WIDTH                 504 /* PAL_FIELD_CYCLES_PER_LINE * PIXELS_PER_CYCLE */
 #define PAL_FIELD_LINE_HEIGHT                312
 
 
@@ -87,6 +93,18 @@ class CMOS6569 : public CDevice{
 		u16 GetCharacterMemoryOffset();
 		u16 GetScreenMemoryOffset();
 		u16 GetSpritePointersMemoryOffset();
+
+		// Sprite
+		bool IsSpriteEnabled(unsigned int spriteIndex);
+		u8 GetSpritePointerValue(unsigned int spriteIndex);
+		u16 GetSpriteDataMemoryOffset(unsigned int spriteIndex);
+		u16 GetSpriteXPosition(unsigned int spriteIndex);
+		u8 GetSpriteYPosition(unsigned int spriteIndex);
+		unsigned int GetSpriteHorizontalScale(unsigned int spriteIndex);
+		unsigned int GetSpriteVerticalScale(unsigned int spriteIndex);
+		u8 GetSpriteWidth(unsigned int spriteIndex);
+		u8 GetSpriteHeight(unsigned int spriteIndex);
+		bool IsSpriteOnLine(unsigned int spriteIndex, unsigned int lineNumber);
 
 		void SetChar(u16 address, u8 c); //temp
 		
