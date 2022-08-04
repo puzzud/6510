@@ -614,8 +614,9 @@ void DrawScreenLine(unsigned int lineNumber)
 			{
 				u8 spriteYPosition = vic->GetSpriteYPosition(spriteIndex);
 				int spriteXPosition = vic->GetSpriteXPosition(spriteIndex);
-				spriteXPosition -= 23; // Adjust for border and HBlank.
+				spriteXPosition -= 24; // Adjust for border and HBlank.
 				rect.x = spriteXPosition;
+				spriteYPosition += 1; // Arbitrary offset to make things line up?
 
 				unsigned int spriteHorizontalScale = vic->GetSpriteHorizontalScale(spriteIndex);
 				unsigned int spriteVerticalScale = vic->GetSpriteVerticalScale(spriteIndex);
