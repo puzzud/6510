@@ -546,7 +546,7 @@ void DrawByte(u8 byte, u8 colorCode, u16 screenXPosition, u8 screenYPosition, un
 void DrawScreenLine(unsigned int lineNumber)
 {
 	// TODO: Figure out this number!
-#define SCREEN_START_FIELD_LINE 51
+#define SCREEN_START_FIELD_LINE 50
 	int screenLineNumber = lineNumber - SCREEN_START_FIELD_LINE;
 	if (screenLineNumber < 0)
 	{
@@ -613,10 +613,10 @@ void DrawScreenLine(unsigned int lineNumber)
 			if (vic->IsSpriteOnLine(spriteIndex, lineNumber))
 			{
 				u8 spriteYPosition = vic->GetSpriteYPosition(spriteIndex);
+
 				int spriteXPosition = vic->GetSpriteXPosition(spriteIndex);
-				spriteXPosition -= 24; // Adjust for border and HBlank.
+				spriteXPosition -= 24; // Adjust for border and HBlank to match with background.
 				rect.x = spriteXPosition;
-				spriteYPosition += 1; // Arbitrary offset to make things line up?
 
 				unsigned int spriteHorizontalScale = vic->GetSpriteHorizontalScale(spriteIndex);
 				unsigned int spriteVerticalScale = vic->GetSpriteVerticalScale(spriteIndex);
