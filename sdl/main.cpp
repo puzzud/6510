@@ -530,62 +530,9 @@ void DrawScreen()
 //  - 1: Sprite
 void DrawByte(u8 byte, u8* colorCodes, u16 screenXPosition, u8 screenYPosition, int mode, bool multiColor, unsigned int horizontalScale)
 {
-	// Keep local copy of color codes,
-	// some modes may adjust how they are interpreted.
-	static u8 adjustedColorCodes[3];
-	memcpy(adjustedColorCodes, colorCodes, 3);
-
-	// Determine character multicolor mode behavior based on byte.
-	if (mode == 0)
-	{
-		if (multiColor)
-		{
-			if ((adjustedColorCodes[2] & 0x08) == 0)
-			{
-				multiColor = false;
-			}
-
-			adjustedColorCodes[2] &= 0x07;
-		}
-	}
-
-	u8 singleColorCode = (mode == 0) ? adjustedColorCodes[2] : adjustedColorCodes[1];
-
-	static u8 pixelColorBuffer[16]; // 16 bytes in case of horizontal scaling.
+	static u8 pixelColorBuffer[16];  // 16 bytes in case of horizontal scaling.
 	memset(pixelColorBuffer, 0, 16);
-
-	int bufferIndex = (8 * horizontalScale) - 1;
-
-	for (int x = 0; x < 8; x += 2, byte >>= 2)
-	{
-		u8 bitPair = byte & 0x03;
-
-		if (bitPair == 0)
-		{
-			bufferIndex -= 2 * horizontalScale;
-			continue;
-		}
-		
-		for (int bitIndex = 0; bitIndex < 2; ++bitIndex)
-		{
-			if (!multiColor)
-			{
-				if ((bitPair & (1 << bitIndex)) == 0)
-				{
-					bufferIndex -= horizontalScale;
-					continue;
-				}
-			}
-
-			for (int s = 0; s < horizontalScale; ++s, --bufferIndex)
-			{
-				// Plus 1 to account for using 0 for transparency.
-				// Needs to be readjusted on consumption.
-				pixelColorBuffer[bufferIndex] =
-					(multiColor ? adjustedColorCodes[bitPair - 1] : singleColorCode) + 1;
-			}
-		}
-	}
+	cbm64->GetVic()->DrawByteToBuffer(byte, pixelColorBuffer, colorCodes, mode, multiColor, horizontalScale);
 
 	// Draw to renderer from pixel buffers.
 	SDL_Rect rect;
