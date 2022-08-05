@@ -16,6 +16,14 @@
 #include "Device.h"
 #include "Bus.h"
 
+#define NTSC_FIELD_CYCLES_PER_LINE           65
+#define NTSC_FIELD_LINE_WIDTH                520 /* NTSC_FIELD_CYCLES_PER_LINE * PIXELS_PER_CYCLE */
+#define NTSC_FIELD_LINE_HEIGHT               263
+
+#define PAL_FIELD_CYCLES_PER_LINE            63
+#define PAL_FIELD_LINE_WIDTH                 504 /* PAL_FIELD_CYCLES_PER_LINE * PIXELS_PER_CYCLE */
+#define PAL_FIELD_LINE_HEIGHT                312
+
 #define CHARACTER_MEMORY_BANK_SIZE           0x0800
 #define SCREEN_MEMORY_BANK_SIZE              0x0400
 
@@ -35,17 +43,10 @@
 #define NUMBER_OF_HARDWARE_SPRITES           8
 #define HARDWARE_SPRITE_WIDTH                24
 #define HARDWARE_SPRITE_HEIGHT               21
+#define HARDWARE_SPRITE_X_POSITION_MAX       511
+#define HARDWARE_SPRITE_COLOR_BUFFER_SIZE    (HARDWARE_SPRITE_X_POSITION_MAX + (HARDWARE_SPRITE_WIDTH * 2))
 #define HARDWARE_SPRITE_BYTE_COUNT           63 /* 3 bytes per row. 21 rows */
 #define HARDWARE_SPRITE_DATA_BLOCK_SIZE      (HARDWARE_SPRITE_BYTE_COUNT + 1) /* 64 */
-
-#define NTSC_FIELD_CYCLES_PER_LINE           65
-#define NTSC_FIELD_LINE_WIDTH                520 /* NTSC_FIELD_CYCLES_PER_LINE * PIXELS_PER_CYCLE */
-#define NTSC_FIELD_LINE_HEIGHT               263
-
-#define PAL_FIELD_CYCLES_PER_LINE            63
-#define PAL_FIELD_LINE_WIDTH                 504 /* PAL_FIELD_CYCLES_PER_LINE * PIXELS_PER_CYCLE */
-#define PAL_FIELD_LINE_HEIGHT                312
-
 
 class CVICHWScreen{
 public:
@@ -78,6 +79,15 @@ class CMOS6569 : public CDevice{
 
 		CBus* mBus;
 		CVICHWScreen* mRenderer;
+
+		// Used for determining sprite collisions.
+		// Maybe used in future to actually render sprites.
+		// Each sprite gets a dedicated line which is then
+		// used to compare between each sprite.
+		// Note that each line is long enough to contain
+		// double width sprites at their max X position,
+		// done so to prevent overflow and bound checking.
+		u8 spriteFieldLinePixelColorBuffers[NUMBER_OF_HARDWARE_SPRITES][HARDWARE_SPRITE_COLOR_BUFFER_SIZE];
 	protected:
 	public:
 		CMOS6569();
@@ -105,7 +115,9 @@ class CMOS6569 : public CDevice{
 		bool IsSpriteOnLine(unsigned int spriteIndex, unsigned int lineNumber);
 		u8 GetSpritePointerValue(unsigned int spriteIndex);
 		u16 GetSpriteDataMemoryOffset(unsigned int spriteIndex);
+		u8 GetSpriteColor(unsigned int spriteIndex);
 		bool IsSpriteMultiColor(unsigned int spriteIndex);
+		void TestSpriteCollision();
 
 		void SetChar(u16 address, u8 c); //temp
 		
@@ -114,6 +126,7 @@ class CMOS6569 : public CDevice{
 		void HWNeedsRedraw();
 
 		void DrawByteToBuffer(u8 byte, u8* pixelColorBuffer, u8* colorCodes, int mode, bool multiColor, unsigned int horizontalScale);
+		void DrawSpriteRowToBuffer(unsigned int spriteIndex, unsigned int rowIndex, u8* pixelColorBuffer);
 };
 
 
