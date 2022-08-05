@@ -112,6 +112,8 @@ class CMOS6569 : public CDevice{
 		//Hardware dependend calls
 		void RegisterHWScreen(CVICHWScreen* screen);
 		void HWNeedsRedraw();
+
+		void DrawByteToBuffer(u8 byte, u8* pixelColorBuffer, u8* colorCodes, int mode, bool multiColor, unsigned int horizontalScale);
 };
 
 

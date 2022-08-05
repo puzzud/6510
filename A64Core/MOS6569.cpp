@@ -232,3 +232,78 @@ void CMOS6569::RegisterHWScreen(CVICHWScreen* screen){
 void CMOS6569::HWNeedsRedraw(){
 }
 
+
+// mode parameter indicates character or sprite mode,
+// because of the discrepancy between how bit pairs
+// map to color values respectively.
+//  - 0: Character
+//  - 1: Sprite
+// Assumes at least 16 bytes of valid memory at
+// pixelColorBuffer, in case of horizontal scaling.
+void CMOS6569::DrawByteToBuffer(u8 byte, u8* pixelColorBuffer, u8* colorCodes, int mode, bool multiColor, unsigned int horizontalScale)
+{
+	// Keep local copy of color codes,
+	// some modes may adjust how they are interpreted.
+	static u8 adjustedColorCodes[3];
+	memcpy(adjustedColorCodes, colorCodes, 3);
+
+	// Determine character multicolor mode behavior based on byte.
+	if (mode == 0)
+	{
+		if (multiColor)
+		{
+			if ((adjustedColorCodes[2] & 0x08) == 0)
+			{
+				// Fall back to single color if color code
+				// has bit 4 set.
+				multiColor = false;
+			}
+
+			// This color can only be in range 0-7,
+			// in multicolor character mode.
+			adjustedColorCodes[2] &= 0x07;
+		}
+	}
+
+	// Characters & sprites use different bit pairs.
+	// This variable is an attempt to help normalize
+	// the order of colors provided by colorCodes.
+	u8 singleColorCode =
+		(mode == 0) ? adjustedColorCodes[2] : adjustedColorCodes[1];
+
+	//static u8 pixelColorBuffer[16];
+	//memset(pixelColorBuffer, 0, 16); // Clear it, but maybe in future expect it to be cleared ahead of time.
+
+	int bufferIndex = (8 * horizontalScale) - 1;
+
+	for (int x = 0; x < 8; x += 2, byte >>= 2)
+	{
+		u8 bitPair = byte & 0x03;
+
+		if (bitPair == 0)
+		{
+			bufferIndex -= 2 * horizontalScale;
+			continue;
+		}
+		
+		for (int bitIndex = 0; bitIndex < 2; ++bitIndex)
+		{
+			if (!multiColor)
+			{
+				if ((bitPair & (1 << bitIndex)) == 0)
+				{
+					bufferIndex -= horizontalScale;
+					continue;
+				}
+			}
+
+			for (int s = 0; s < horizontalScale; ++s, --bufferIndex)
+			{
+				// Plus 1 to account for using 0 for transparency.
+				// Needs to be readjusted on consumption.
+				pixelColorBuffer[bufferIndex] =
+					(multiColor ? adjustedColorCodes[bitPair - 1] : singleColorCode) + 1;
+			}
+		}
+	}
+}

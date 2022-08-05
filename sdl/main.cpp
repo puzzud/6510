@@ -566,74 +566,27 @@ void DrawScreen()
 //  - 1: Sprite
 void DrawByte(u8 byte, u8* colorCodes, u16 screenXPosition, u8 screenYPosition, int mode, bool multiColor, unsigned int horizontalScale)
 {
+	static u8 pixelColorBuffer[16];  // 16 bytes in case of horizontal scaling.
+	memset(pixelColorBuffer, 0, 16);
+	cbm64->GetVic()->DrawByteToBuffer(byte, pixelColorBuffer, colorCodes, mode, multiColor, horizontalScale);
+
+	// Draw to renderer from pixel buffers.
 	SDL_Rect rect;
 	rect.y = screenYPosition;
 	rect.w = 1;
 	rect.h = 1;
 
-	static u8 pixelTransparencyBuffer[16]; // 16 bits in case of horizontal scaling.
-	static u8 pixelColorBuffer[16]; // 16 bits in case of horizontal scaling.
-	memset(pixelTransparencyBuffer, 0, 16);
-	memset(pixelColorBuffer, 0, 16);
-
-	int bufferIndex = (8 * horizontalScale) - 1;
-
-	for (int x = 0; x < 8; x += 2, byte >>= 2)
-	{
-		u8 bitPair = byte & 0x03;
-
-		if (multiColor)
-		{
-			if (bitPair == 0)
-			{
-				bufferIndex -= 2 * horizontalScale;
-				continue;
-			}
-			
-			for (int bitIndex = 0; bitIndex < 2; ++bitIndex)
-			{
-				for (int s = 0; s < horizontalScale; ++s, --bufferIndex)
-				{
-					pixelTransparencyBuffer[bufferIndex] = 1;
-					pixelColorBuffer[bufferIndex] = colorCodes[bitPair - 1];
-				}
-			}
-		}
-		else
-		{
-			if (bitPair == 0)
-			{
-				bufferIndex -= 2 * horizontalScale;
-				continue;
-			}
-			
-			for (int bitIndex = 0; bitIndex < 2; ++bitIndex)
-			{
-				if ((bitPair & (1 << bitIndex)) == 0)
-				{
-					bufferIndex -= horizontalScale;
-					continue;
-				}
-
-				for (int s = 0; s < horizontalScale; ++s, --bufferIndex)
-				{
-					pixelTransparencyBuffer[bufferIndex] = 1;
-					pixelColorBuffer[bufferIndex] = (mode == 0) ? colorCodes[2] : colorCodes[1];
-				}
-			}
-		}
-	}
-
 	for (int x = 0; x < (8 * horizontalScale); x += 1)
 	{
-		if (pixelTransparencyBuffer[x] == 0)
+		if (pixelColorBuffer[x] == 0)
 		{
 			continue;
 		}
 
 		rect.x = screenXPosition + x;
 
-		u8 colorCode = pixelColorBuffer[x];
+		// Minus 1 to account for using 0 for transparency.
+		u8 colorCode = pixelColorBuffer[x] - 1;
 		SDL_Color* color = &Colors[colorCode & 0x0F];
 		SDL_SetRenderDrawColor(Renderer, color->r, color->g, color->b, color->a);
 		SDL_RenderFillRect(Renderer, &rect);
@@ -673,8 +626,7 @@ void DrawScreenLine(unsigned int lineNumber)
 	SDL_RenderFillRect(Renderer, &rect);
 
 	static u8 colorCodes[3];
-	bool multiColorCharacters = bus->PeekDevice(eBusVic, 0xD016) & 0x10;
-
+	bool multiColorCharacters = (bus->PeekDevice(eBusVic, 0xD016) & 0x10) != 0;
 	if (multiColorCharacters)
 	{
 		colorCodes[0] = bus->PeekDevice(eBusVic, 0xD022) & 0x0F;
