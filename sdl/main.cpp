@@ -530,10 +530,26 @@ void DrawScreen()
 //  - 1: Sprite
 void DrawByte(u8 byte, u8* colorCodes, u16 screenXPosition, u8 screenYPosition, int mode, bool multiColor, unsigned int horizontalScale)
 {
-	SDL_Rect rect;
-	rect.y = screenYPosition;
-	rect.w = 1;
-	rect.h = 1;
+	// Keep local copy of color codes,
+	// some modes may adjust how they are interpreted.
+	static u8 adjustedColorCodes[3];
+	memcpy(adjustedColorCodes, colorCodes, 3);
+
+	// Determine character multicolor mode behavior based on byte.
+	if (mode == 0)
+	{
+		if (multiColor)
+		{
+			if ((adjustedColorCodes[2] & 0x08) == 0)
+			{
+				multiColor = false;
+			}
+
+			adjustedColorCodes[2] &= 0x07;
+		}
+	}
+
+	u8 singleColorCode = (mode == 0) ? adjustedColorCodes[2] : adjustedColorCodes[1];
 
 	static u8 pixelTransparencyBuffer[16]; // 16 bits in case of horizontal scaling.
 	static u8 pixelColorBuffer[16]; // 16 bits in case of horizontal scaling.
@@ -559,7 +575,7 @@ void DrawByte(u8 byte, u8* colorCodes, u16 screenXPosition, u8 screenYPosition, 
 				for (int s = 0; s < horizontalScale; ++s, --bufferIndex)
 				{
 					pixelTransparencyBuffer[bufferIndex] = 1;
-					pixelColorBuffer[bufferIndex] = colorCodes[bitPair - 1];
+					pixelColorBuffer[bufferIndex] = adjustedColorCodes[bitPair - 1];
 				}
 			}
 		}
@@ -582,11 +598,17 @@ void DrawByte(u8 byte, u8* colorCodes, u16 screenXPosition, u8 screenYPosition, 
 				for (int s = 0; s < horizontalScale; ++s, --bufferIndex)
 				{
 					pixelTransparencyBuffer[bufferIndex] = 1;
-					pixelColorBuffer[bufferIndex] = (mode == 0) ? colorCodes[2] : colorCodes[1];
+					pixelColorBuffer[bufferIndex] = singleColorCode;
 				}
 			}
 		}
 	}
+
+	// Draw to renderer from pixel buffers.
+	SDL_Rect rect;
+	rect.y = screenYPosition;
+	rect.w = 1;
+	rect.h = 1;
 
 	for (int x = 0; x < (8 * horizontalScale); x += 1)
 	{
@@ -637,8 +659,7 @@ void DrawScreenLine(unsigned int lineNumber)
 	SDL_RenderFillRect(Renderer, &rect);
 
 	static u8 colorCodes[3];
-	bool multiColorCharacters = bus->PeekDevice(eBusVic, 0xD016) & 0x10;
-
+	bool multiColorCharacters = (bus->PeekDevice(eBusVic, 0xD016) & 0x10) != 0;
 	if (multiColorCharacters)
 	{
 		colorCodes[0] = bus->PeekDevice(eBusVic, 0xD022) & 0x0F;
