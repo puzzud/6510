@@ -562,44 +562,28 @@ void DrawByte(u8 byte, u8* colorCodes, u16 screenXPosition, u8 screenYPosition, 
 	{
 		u8 bitPair = byte & 0x03;
 
-		if (multiColor)
+		if (bitPair == 0)
 		{
-			if (bitPair == 0)
-			{
-				bufferIndex -= 2 * horizontalScale;
-				continue;
-			}
-			
-			for (int bitIndex = 0; bitIndex < 2; ++bitIndex)
-			{
-				for (int s = 0; s < horizontalScale; ++s, --bufferIndex)
-				{
-					pixelTransparencyBuffer[bufferIndex] = 1;
-					pixelColorBuffer[bufferIndex] = adjustedColorCodes[bitPair - 1];
-				}
-			}
+			bufferIndex -= 2 * horizontalScale;
+			continue;
 		}
-		else
+		
+		for (int bitIndex = 0; bitIndex < 2; ++bitIndex)
 		{
-			if (bitPair == 0)
-			{
-				bufferIndex -= 2 * horizontalScale;
-				continue;
-			}
-			
-			for (int bitIndex = 0; bitIndex < 2; ++bitIndex)
+			if (!multiColor)
 			{
 				if ((bitPair & (1 << bitIndex)) == 0)
 				{
 					bufferIndex -= horizontalScale;
 					continue;
 				}
+			}
 
-				for (int s = 0; s < horizontalScale; ++s, --bufferIndex)
-				{
-					pixelTransparencyBuffer[bufferIndex] = 1;
-					pixelColorBuffer[bufferIndex] = singleColorCode;
-				}
+			for (int s = 0; s < horizontalScale; ++s, --bufferIndex)
+			{
+				pixelTransparencyBuffer[bufferIndex] = 1;
+				pixelColorBuffer[bufferIndex] =
+					multiColor ? adjustedColorCodes[bitPair - 1] : singleColorCode;
 			}
 		}
 	}
