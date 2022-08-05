@@ -551,9 +551,7 @@ void DrawByte(u8 byte, u8* colorCodes, u16 screenXPosition, u8 screenYPosition, 
 
 	u8 singleColorCode = (mode == 0) ? adjustedColorCodes[2] : adjustedColorCodes[1];
 
-	static u8 pixelTransparencyBuffer[16]; // 16 bits in case of horizontal scaling.
-	static u8 pixelColorBuffer[16]; // 16 bits in case of horizontal scaling.
-	memset(pixelTransparencyBuffer, 0, 16);
+	static u8 pixelColorBuffer[16]; // 16 bytes in case of horizontal scaling.
 	memset(pixelColorBuffer, 0, 16);
 
 	int bufferIndex = (8 * horizontalScale) - 1;
@@ -581,9 +579,10 @@ void DrawByte(u8 byte, u8* colorCodes, u16 screenXPosition, u8 screenYPosition, 
 
 			for (int s = 0; s < horizontalScale; ++s, --bufferIndex)
 			{
-				pixelTransparencyBuffer[bufferIndex] = 1;
+				// Plus 1 to account for using 0 for transparency.
+				// Needs to be readjusted on consumption.
 				pixelColorBuffer[bufferIndex] =
-					multiColor ? adjustedColorCodes[bitPair - 1] : singleColorCode;
+					(multiColor ? adjustedColorCodes[bitPair - 1] : singleColorCode) + 1;
 			}
 		}
 	}
@@ -596,14 +595,15 @@ void DrawByte(u8 byte, u8* colorCodes, u16 screenXPosition, u8 screenYPosition, 
 
 	for (int x = 0; x < (8 * horizontalScale); x += 1)
 	{
-		if (pixelTransparencyBuffer[x] == 0)
+		if (pixelColorBuffer[x] == 0)
 		{
 			continue;
 		}
 
 		rect.x = screenXPosition + x;
 
-		u8 colorCode = pixelColorBuffer[x];
+		// Minus 1 to account for using 0 for transparency.
+		u8 colorCode = pixelColorBuffer[x] - 1;
 		SDL_Color* color = &Colors[colorCode & 0x0F];
 		SDL_SetRenderDrawColor(Renderer, color->r, color->g, color->b, color->a);
 		SDL_RenderFillRect(Renderer, &rect);
