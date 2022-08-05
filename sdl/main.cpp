@@ -54,7 +54,7 @@ void OnInputTextInputEvent(SDL_Event* event);
 void InitializeColors(void);
 void SetColorValuesFromInt(SDL_Color* color, unsigned int value);
 void DrawScreen();
-void DrawByte(u8 byte, u8 colorCode, u16 screenXPosition, u8 screenYPosition, bool multiColor = false, unsigned int horizontalScale = 1);
+void DrawByte(u8 byte, u8* colorCodes, u16 screenXPosition, u8 screenYPosition, int mode, bool multiColor = false, unsigned int horizontalScale = 1);
 void DrawScreenLine(unsigned int lineNumber);
 
 class HiresTimeImpl;
@@ -523,7 +523,12 @@ void DrawScreen()
 	}
 }
 
-void DrawByte(u8 byte, u8 colorCode, u16 screenXPosition, u8 screenYPosition, bool multiColor, unsigned int horizontalScale)
+// mode parameter indicates character or sprite mode,
+// because of the discrepancy between how bit pairs
+// map to color values respectively.
+//  - 0: Character
+//  - 1: Sprite
+void DrawByte(u8 byte, u8* colorCodes, u16 screenXPosition, u8 screenYPosition, int mode, bool multiColor, unsigned int horizontalScale)
 {
 	SDL_Rect rect;
 	rect.y = screenYPosition;
@@ -554,7 +559,7 @@ void DrawByte(u8 byte, u8 colorCode, u16 screenXPosition, u8 screenYPosition, bo
 				for (int s = 0; s < horizontalScale; ++s, --bufferIndex)
 				{
 					pixelTransparencyBuffer[bufferIndex] = 1;
-					pixelColorBuffer[bufferIndex] = bitPair;
+					pixelColorBuffer[bufferIndex] = colorCodes[bitPair - 1];
 				}
 			}
 		}
@@ -577,7 +582,7 @@ void DrawByte(u8 byte, u8 colorCode, u16 screenXPosition, u8 screenYPosition, bo
 				for (int s = 0; s < horizontalScale; ++s, --bufferIndex)
 				{
 					pixelTransparencyBuffer[bufferIndex] = 1;
-					pixelColorBuffer[bufferIndex] = colorCode;
+					pixelColorBuffer[bufferIndex] = (mode == 0) ? colorCodes[2] : colorCodes[1];
 				}
 			}
 		}
@@ -631,6 +636,15 @@ void DrawScreenLine(unsigned int lineNumber)
 	SDL_SetRenderDrawColor(Renderer, backgroundColor->r, backgroundColor->g, backgroundColor->b, backgroundColor->a);
 	SDL_RenderFillRect(Renderer, &rect);
 
+	static u8 colorCodes[3];
+	bool multiColorCharacters = bus->PeekDevice(eBusVic, 0xD016) & 0x10;
+
+	if (multiColorCharacters)
+	{
+		colorCodes[0] = bus->PeekDevice(eBusVic, 0xD022) & 0x0F;
+		colorCodes[1] = bus->PeekDevice(eBusVic, 0xD023) & 0x0F;
+	}
+
 	rect.w = 0;
 
 	unsigned int rowIndex = screenLineNumber / CHARACTER_HEIGHT;
@@ -642,14 +656,15 @@ void DrawScreenLine(unsigned int lineNumber)
 		int characterScreenMemoryOffset = (rowIndex * SCREEN_CHAR_WIDTH) + columnIndex;
 
 		unsigned char colorCode = bus->PeekDevice(eBusVic, 0xD800 + characterScreenMemoryOffset) & 0x0F;
-		unsigned char shapeCode = bus->PeekDevice(eBusRam, vicScreenMemoryStartAddress + characterScreenMemoryOffset);
+		colorCodes[2] = colorCode;
 
+		unsigned char shapeCode = bus->PeekDevice(eBusRam, vicScreenMemoryStartAddress + characterScreenMemoryOffset);
 		int characterRomCharOffset = shapeCode * CHARACTER_HEIGHT;
 		
 		bus->SetMode(eBusModeVic);
 		unsigned char charRowByte = bus->Peek(vicCharacterMemoryStartAddress + characterRomCharOffset + characterRowIndex);
 
-		DrawByte(charRowByte, colorCode, (columnIndex * CHARACTER_WIDTH), rect.y, false);
+		DrawByte(charRowByte, colorCodes, (columnIndex * CHARACTER_WIDTH), rect.y, 0, multiColorCharacters);
 	}
 
 	// Draw horizontal slices of sprite rectangles (for now).
@@ -658,6 +673,10 @@ void DrawScreenLine(unsigned int lineNumber)
 	u8 spriteEnable = bus->PeekDevice(eBusVic, 0xD015);
 	if (spriteEnable != 0)
 	{
+		static u8 colorCodes[3];
+		colorCodes[0] = bus->PeekDevice(eBusVic, 0xD025) & 0x0F;
+		colorCodes[2] = bus->PeekDevice(eBusVic, 0xD026) & 0x0F;
+
 		// Process sprites in reverse order to account for sprite priority.
 		for (int spriteIndex = NUMBER_OF_HARDWARE_SPRITES - 1; spriteIndex > -1; --spriteIndex)
 		{
@@ -677,7 +696,10 @@ void DrawScreenLine(unsigned int lineNumber)
 				unsigned int spriteHorizontalScale = vic->GetSpriteHorizontalScale(spriteIndex);
 				unsigned int spriteVerticalScale = vic->GetSpriteVerticalScale(spriteIndex);
 
-				u8 colorCode = bus->PeekDevice(eBusVic, 0xD027 + spriteIndex);
+				bool multiColorSprite = vic->IsSpriteMultiColor(spriteIndex);
+
+				u8 colorCode = bus->PeekDevice(eBusVic, 0xD027 + spriteIndex) & 0x0F;
+				colorCodes[1] = colorCode;
 
 				u16 spriteDataAddress = vicMemoryBankStartAddress + vic->GetSpriteDataMemoryOffset(spriteIndex);
 
@@ -690,7 +712,7 @@ void DrawScreenLine(unsigned int lineNumber)
 					bus->SetMode(eBusModeVic);
 					u8 spriteLineByte = bus->Peek(spriteDataAddress + byteIndex);
 
-					DrawByte(spriteLineByte, colorCode, rect.x, rect.y, false, spriteHorizontalScale);
+					DrawByte(spriteLineByte, colorCodes, rect.x, rect.y, 1, multiColorSprite, spriteHorizontalScale);
 
 					rect.x += 8 * spriteHorizontalScale;
 				}
