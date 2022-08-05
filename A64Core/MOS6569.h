@@ -96,8 +96,6 @@ class CMOS6569 : public CDevice{
 
 		// Sprite
 		bool IsSpriteEnabled(unsigned int spriteIndex);
-		u8 GetSpritePointerValue(unsigned int spriteIndex);
-		u16 GetSpriteDataMemoryOffset(unsigned int spriteIndex);
 		u16 GetSpriteXPosition(unsigned int spriteIndex);
 		u8 GetSpriteYPosition(unsigned int spriteIndex);
 		unsigned int GetSpriteHorizontalScale(unsigned int spriteIndex);
@@ -105,6 +103,9 @@ class CMOS6569 : public CDevice{
 		u8 GetSpriteWidth(unsigned int spriteIndex);
 		u8 GetSpriteHeight(unsigned int spriteIndex);
 		bool IsSpriteOnLine(unsigned int spriteIndex, unsigned int lineNumber);
+		u8 GetSpritePointerValue(unsigned int spriteIndex);
+		u16 GetSpriteDataMemoryOffset(unsigned int spriteIndex);
+		bool IsSpriteMultiColor(unsigned int spriteIndex);
 
 		void SetChar(u16 address, u8 c); //temp
 		
