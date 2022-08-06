@@ -54,6 +54,8 @@ void OnInputTextInputEvent(SDL_Event* event);
 void InitializeColors(void);
 void SetColorValuesFromInt(SDL_Color* color, unsigned int value);
 void DrawScreen();
+void DrawByte(u8 byte, u8* colorCodes, u16 screenXPosition, u8 screenYPosition, int mode, bool multiColor = false, unsigned int horizontalScale = 1);
+void DrawBufferOnLine(u16 screenXPosition, u8 screenYPosition, u8* pixelColorBuffer, unsigned int numberOfPixels);
 void DrawScreenLine(unsigned int lineNumber);
 
 class HiresTimeImpl;
@@ -522,11 +524,47 @@ void DrawScreen()
 	}
 }
 
+// mode parameter indicates character or sprite mode,
+// because of the discrepancy between how bit pairs
+// map to color values respectively.
+//  - 0: Character
+//  - 1: Sprite
+void DrawByte(u8 byte, u8* colorCodes, u16 screenXPosition, u8 screenYPosition, int mode, bool multiColor, unsigned int horizontalScale)
+{
+	static u8 pixelColorBuffer[16];  // 16 bytes in case of horizontal scaling.
+	memset(pixelColorBuffer, 0, 16);
+	cbm64->GetVic()->DrawByteToBuffer(byte, pixelColorBuffer, colorCodes, mode, multiColor, horizontalScale);
+	DrawBufferOnLine(screenXPosition, screenYPosition, pixelColorBuffer, 8 * horizontalScale);
+}
+
+void DrawBufferOnLine(u16 screenXPosition, u8 screenYPosition, u8* pixelColorBuffer, unsigned int numberOfPixels)
+{
+	// Draw to renderer from pixel buffers.
+	SDL_Rect rect;
+	rect.x = screenXPosition;
+	rect.y = screenYPosition;
+	rect.w = 1;
+	rect.h = 1;
+
+	for (int x = 0; x < numberOfPixels; ++x, ++rect.x)
+	{
+		if (pixelColorBuffer[x] == 0)
+		{
+			continue;
+		}
+
+		// Minus 1 to account for using 0 for transparency.
+		u8 colorCode = pixelColorBuffer[x] - 1;
+		SDL_Color* color = &Colors[colorCode & 0x0F];
+		SDL_SetRenderDrawColor(Renderer, color->r, color->g, color->b, color->a);
+		SDL_RenderFillRect(Renderer, &rect);
+	}
+}
+
 void DrawScreenLine(unsigned int lineNumber)
 {
 	// TODO: Figure out this number!
-#define SCREEN_START_FIELD_LINE 51
-	int screenLineNumber = lineNumber - SCREEN_START_FIELD_LINE;
+	int screenLineNumber = lineNumber - HARDWARE_SPRITE_TO_SCREEN_Y_OFFSET;
 	if (screenLineNumber < 0)
 	{
 		return;
@@ -537,12 +575,10 @@ void DrawScreenLine(unsigned int lineNumber)
 		return;
 	}
 
-	auto bus = CBus::GetInstance();
 	auto vic = cbm64->GetVic();
-	u16 vicMemoryBankStartAddress = bus->GetVicMemoryBankStartAddress();
-	u16 vicScreenMemoryStartAddress = vicMemoryBankStartAddress + vic->GetScreenMemoryOffset();
-	u16 vicCharacterMemoryStartAddress = vicMemoryBankStartAddress + vic->GetCharacterMemoryOffset();
 
+	// Draw background.
+	// TODO: Does not account for background color in extended color mode.
 	SDL_Rect rect;
 	rect.y = screenLineNumber;
 	rect.h = 1;
@@ -554,86 +590,52 @@ void DrawScreenLine(unsigned int lineNumber)
 	SDL_SetRenderDrawColor(Renderer, backgroundColor->r, backgroundColor->g, backgroundColor->b, backgroundColor->a);
 	SDL_RenderFillRect(Renderer, &rect);
 
-	rect.w = 0;
+	// Draw background.
+	static u8 pixelColorBuffer[HARDWARE_SPRITE_PIXEL_BUFFER_SIZE];
+	memset(pixelColorBuffer, 0, HARDWARE_SPRITE_PIXEL_BUFFER_SIZE);
 
-	unsigned int rowIndex = screenLineNumber / CHARACTER_HEIGHT;
-	unsigned int characterRowIndex = screenLineNumber % CHARACTER_HEIGHT;
+	// HARDWARE_SPRITE_TO_SCREEN_X_OFFSET accounts for
+	// border and HBlank to match with screen background.
+	vic->DrawBackgroundRowToBuffer(lineNumber, pixelColorBuffer + HARDWARE_SPRITE_TO_SCREEN_X_OFFSET);
+				
+	DrawBufferOnLine(
+		0,
+		screenLineNumber,
+		pixelColorBuffer + HARDWARE_SPRITE_TO_SCREEN_X_OFFSET,
+		SCREEN_WIDTH);
 
-	// 1 column (1 byte) per cycle.
-	for (unsigned int columnIndex = 0; columnIndex < SCREEN_CHAR_WIDTH; ++columnIndex)
-	{
-		int characterScreenMemoryOffset = (rowIndex * SCREEN_CHAR_WIDTH) + columnIndex;
-
-		unsigned char colorCode = bus->PeekDevice(eBusVic, 0xD800 + characterScreenMemoryOffset) & 0x0F;
-		unsigned char shapeCode = bus->PeekDevice(eBusRam, vicScreenMemoryStartAddress + characterScreenMemoryOffset);
-
-		int characterRomCharOffset = shapeCode * CHARACTER_HEIGHT;
-		
-		bus->SetMode(eBusModeVic);
-		unsigned char charRowByte = bus->Peek(vicCharacterMemoryStartAddress + characterRomCharOffset + characterRowIndex);
-
-		rect.w = 1;
-		for (int x = 0; x < CHARACTER_WIDTH; ++x)
-		{
-            if (charRowByte & (1 << (CHARACTER_WIDTH - x - 1)))
-			{
-				rect.x = (columnIndex * CHARACTER_WIDTH) + x;
-
-				SDL_Color* color = &Colors[colorCode % 16];
-				SDL_SetRenderDrawColor(Renderer, color->r, color->g, color->b, color->a);
-				SDL_RenderFillRect(Renderer, &rect);
-			}
-		}
-	}
-
-	// Draw horizontal slices of sprite rectangles (for now).
+	// Draw sprites.
 	// NOTE: Drawing all of them afterwards ignores the sprite
 	// to background priority VIC setting.
+	auto bus = CBus::GetInstance();
 	u8 spriteEnable = bus->PeekDevice(eBusVic, 0xD015);
 	if (spriteEnable != 0)
 	{
-		u8 spriteXPositionMsbs = bus->PeekDevice(eBusVic, 0xD010);
-		u8 spriteXExpands = bus->PeekDevice(eBusVic, 0xD01D);
-		u8 spriteYExpands = bus->PeekDevice(eBusVic, 0xD017);
-
 		// Process sprites in reverse order to account for sprite priority.
-		for (int spriteIndex = 8 - 1; spriteIndex > -1; --spriteIndex)
+		for (int spriteIndex = NUMBER_OF_HARDWARE_SPRITES - 1; spriteIndex > -1; --spriteIndex)
 		{
-			if ((spriteEnable & (1 << spriteIndex)) == 0)
+			if (!vic->IsSpriteEnabled(spriteIndex))
 			{
 				continue;
 			}
 
-			u8 spriteYPosition = bus->PeekDevice(eBusVic, 0xD001 + (spriteIndex * 2));
-			unsigned int spriteHeight = 21;
-			if ((spriteYExpands & (1 << spriteIndex)) != 0)
+			if (vic->IsSpriteOnLine(spriteIndex, lineNumber))
 			{
-				spriteHeight *= 2;
-			}
+				u8 spriteYPosition = vic->GetSpriteYPosition(spriteIndex);
+				u8 spriteRowOffset = (lineNumber - spriteYPosition) / vic->GetSpriteVerticalScale(spriteIndex);
 
-			if (lineNumber >= spriteYPosition && lineNumber <= (spriteYPosition + spriteHeight))
-			{
-				u8 spriteXPositionLsb = bus->PeekDevice(eBusVic, 0xD000 + (spriteIndex * 2));
-
-				int spriteXPosition = spriteXPositionLsb;
-				if ((spriteXPositionMsbs & (1 << spriteIndex)) != 0)
-				{
-					spriteXPosition += 0x100;
-				}
-
-				spriteXPosition -= 23; // Adjust for border and HBlank.
-
-				rect.x = spriteXPosition;
-				rect.w = 24;
-				if ((spriteXExpands & (1 << spriteIndex)) != 0)
-				{
-					rect.w *= 2;
-				}
-
-				u8 colorCode = bus->PeekDevice(eBusVic, 0xD027 + spriteIndex);
-				SDL_Color* color = &Colors[colorCode % 16];
-				SDL_SetRenderDrawColor(Renderer, color->r, color->g, color->b, color->a);
-				SDL_RenderFillRect(Renderer, &rect);
+				// 48 bytes in case of horizontal scaling.
+				static u8 pixelColorBuffer[HARDWARE_SPRITE_WIDTH * 2];
+				memset(pixelColorBuffer, 0, HARDWARE_SPRITE_WIDTH * 2);
+				
+				vic->DrawSpriteRowToBuffer(spriteIndex, spriteRowOffset, pixelColorBuffer);
+				
+				// Adjust X for border and HBlank to match with background.
+				DrawBufferOnLine(
+					vic->GetSpriteXPosition(spriteIndex) - HARDWARE_SPRITE_TO_SCREEN_X_OFFSET,
+					screenLineNumber,
+					pixelColorBuffer,
+					vic->GetSpriteWidth(spriteIndex));
 			}
 		}
 	}
