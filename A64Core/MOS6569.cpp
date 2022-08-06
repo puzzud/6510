@@ -381,6 +381,49 @@ void CMOS6569::DrawByteToBuffer(u8 byte, u8* pixelColorBuffer, u8* colorCodes, i
 	}
 }
 
+
+void CMOS6569::DrawBackgroundRowToBuffer(unsigned int fieldLineNumber, u8* pixelColorBuffer){
+	u16 vicMemoryBankStartAddress = mBus->GetVicMemoryBankStartAddress();
+	u16 vicScreenMemoryStartAddress = vicMemoryBankStartAddress + GetScreenMemoryOffset();
+	u16 vicCharacterMemoryStartAddress = vicMemoryBankStartAddress + GetCharacterMemoryOffset();
+	
+	static u8 colorCodes[3];
+	bool multiColorCharacters = (mRegs[0xD016-0xD000] & 0x10) != 0;
+	if (multiColorCharacters)
+	{
+		colorCodes[0] = mRegs[0xD022-0xD000] & 0x0F;
+		colorCodes[1] = mRegs[0xD023-0xD000] & 0x0F;
+	}
+
+	int screenLineNumber = fieldLineNumber - HARDWARE_SPRITE_TO_SCREEN_Y_OFFSET;
+	unsigned int rowIndex = screenLineNumber / CHARACTER_HEIGHT;
+	unsigned int characterRowIndex = screenLineNumber % CHARACTER_HEIGHT;
+
+	// 1 column (1 byte) per cycle.
+	for (unsigned int columnIndex = 0; columnIndex < SCREEN_CHAR_WIDTH; ++columnIndex)
+	{
+		int characterScreenMemoryOffset = (rowIndex * SCREEN_CHAR_WIDTH) + columnIndex;
+
+		colorCodes[2] = mBus->PeekDevice(eBusVic, 0xD800 + characterScreenMemoryOffset) & 0x0F;
+
+		unsigned char shapeCode = mBus->PeekDevice(eBusRam, vicScreenMemoryStartAddress + characterScreenMemoryOffset);
+		int characterRomCharOffset = shapeCode * CHARACTER_HEIGHT;
+		
+		mBus->SetMode(eBusModeVic);
+		unsigned char charRowByte = mBus->Peek(vicCharacterMemoryStartAddress + characterRomCharOffset + characterRowIndex);
+
+		DrawByteToBuffer(
+			charRowByte,
+			pixelColorBuffer,
+			colorCodes,
+			0,
+			multiColorCharacters);
+		
+		pixelColorBuffer += 8; // NOTE: Mutates function argument.
+	}
+}
+
+
 void CMOS6569::DrawSpriteRowToBuffer(unsigned int spriteIndex, unsigned int rowIndex, u8* pixelColorBuffer){
 	u16 vicMemoryBankStartAddress = mBus->GetVicMemoryBankStartAddress();
 	
@@ -409,6 +452,6 @@ void CMOS6569::DrawSpriteRowToBuffer(unsigned int spriteIndex, unsigned int rowI
 			IsSpriteMultiColor(spriteIndex),
 			spriteHorizontalScale);
 		
-		pixelColorBuffer += (spriteHorizontalScale * 8);
+		pixelColorBuffer += (spriteHorizontalScale * 8); // NOTE: Mutates function argument.
 	}
 }
