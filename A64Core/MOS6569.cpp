@@ -155,14 +155,14 @@ u16 CMOS6569::GetSpritePointersMemoryOffset(){
 
 
 bool CMOS6569::IsSpriteEnabled(unsigned int spriteIndex){
-	u8 spriteEnable = Peek(0xD015);
+	u8 spriteEnable = mRegs[0xD015-0xD000];
 	return (spriteEnable & (1 << spriteIndex)) != 0;
 }
 
 
 u16 CMOS6569::GetSpriteXPosition(unsigned int spriteIndex){
-	u8 spriteXPositionMsbs = Peek(0xD010);
-	u8 spriteXPositionLsb = Peek(0xD000 + (spriteIndex * 2));
+	u8 spriteXPositionMsbs = mRegs[0xD010-0xD000];
+	u8 spriteXPositionLsb = mRegs[0xD000-0xD000 + (spriteIndex * 2)];
 
 	u16 spriteXPosition = spriteXPositionLsb;
 	if ((spriteXPositionMsbs & (1 << spriteIndex)) != 0){
@@ -174,18 +174,18 @@ u16 CMOS6569::GetSpriteXPosition(unsigned int spriteIndex){
 
 
 u8 CMOS6569::GetSpriteYPosition(unsigned int spriteIndex){
-	return Peek(0xD001 + (spriteIndex * 2));
+	return mRegs[0xD001-0xD000 + (spriteIndex * 2)];
 }
 
 
 unsigned int CMOS6569::GetSpriteHorizontalScale(unsigned int spriteIndex){
-	u8 spriteXExpands = Peek(0xD01D);
+	u8 spriteXExpands = mRegs[0xD01D-0xD000];
 	return ((spriteXExpands & (1 << spriteIndex)) != 0) ? 2 : 1;
 }
 
 
 unsigned int CMOS6569::GetSpriteVerticalScale(unsigned int spriteIndex){
-	u8 spriteYExpands = Peek(0xD017);
+	u8 spriteYExpands = mRegs[0xD017-0xD000];
 	return ((spriteYExpands & (1 << spriteIndex)) != 0) ? 2 : 1;
 }
 
@@ -220,12 +220,12 @@ u16 CMOS6569::GetSpriteDataMemoryOffset(unsigned int spriteIndex){
 
 
 u8 CMOS6569::GetSpriteColor(unsigned int spriteIndex){
-	return Peek(0xD027 + spriteIndex) & 0x0F;
+	return mRegs[0xD027-0xD000 + spriteIndex] & 0x0F;
 }
 
 
 bool CMOS6569::IsSpriteMultiColor(unsigned int spriteIndex){
-	u8 spriteMultiColor = Peek(0xD01C);
+	u8 spriteMultiColor = mRegs[0xD01C-0xD000];
 	return (spriteMultiColor & (1 << spriteIndex)) != 0;
 }
 
@@ -337,9 +337,9 @@ void CMOS6569::DrawSpriteRowToBuffer(unsigned int spriteIndex, unsigned int rowI
 	u16 vicMemoryBankStartAddress = mBus->GetVicMemoryBankStartAddress();
 	
 	static u8 colorCodes[3];
-	colorCodes[0] = Peek(0xD025) & 0x0F;
+	colorCodes[0] = mRegs[0xD025-0xD000] & 0x0F;
 	colorCodes[1] = GetSpriteColor(spriteIndex);
-	colorCodes[2] = Peek(0xD026) & 0x0F;
+	colorCodes[2] = mRegs[0xD026-0xD000] & 0x0F;
 
 	u16 spriteDataAddress = vicMemoryBankStartAddress +
 		GetSpriteDataMemoryOffset(spriteIndex);
