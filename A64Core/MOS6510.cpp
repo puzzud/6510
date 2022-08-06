@@ -610,6 +610,11 @@ bool CMOS6510::GetOperandAddress(u8 addressMode, u16* address){
 }
 
 
+u16 CMOS6510::GetPC(){
+	return r_pc;
+}
+
+
 void CMOS6510::SetPC(u16 address){
 	r_pc = address;
 }
@@ -727,6 +732,12 @@ void CMOS6510::F_ASL(u8 addressmode){
 		r_a = val;		
 	}else{	
 		mMemory->Poke(address, val);
+
+		if(mWatcher != NULL){
+			if(mWatcher->CheckWriteWatch(address)){
+				mWatcher->ReportWriteWatch(address);
+			}
+		}
 	}
 
 	CLRFLAG(FLAG_Z);
@@ -1036,6 +1047,12 @@ void CMOS6510::F_DEC(u8 addressmode){
 	}
 	
 	mMemory->Poke(address, m);
+
+	if(mWatcher != NULL){
+		if(mWatcher->CheckWriteWatch(address)){
+			mWatcher->ReportWriteWatch(address);
+		}
+	}
 };
 
 
@@ -1127,6 +1144,12 @@ void CMOS6510::F_INC(u8 addressmode){
 	}
 	
 	mMemory->Poke(address, m);
+
+	if(mWatcher != NULL){
+		if(mWatcher->CheckWriteWatch(address)){
+			mWatcher->ReportWriteWatch(address);
+		}
+	}
 }
 
 /*
@@ -1177,8 +1200,10 @@ void CMOS6510::F_JMP(u8 addressmode){
 	GetOperandAddress(addressmode, &address);	
 	r_pc = address;
 
-	if (mWatcher != NULL){
-		mWatcher->CheckJumpWatch(r_pc, eWatcherJump);
+	if(mWatcher != NULL){
+		if(mWatcher->CheckJumpWatch(r_pc)){
+			mWatcher->ReportJumpWatch(r_pc, eWatcherJump);
+		}
 	}
 }
 
@@ -1195,8 +1220,10 @@ void CMOS6510::F_JSR(u8 addressmode){
 
 	r_pc = address;
 
-	if (mWatcher != NULL){
-		mWatcher->CheckJumpWatch(address, eWatcherJumpRoutine);
+	if(mWatcher != NULL){
+		if(mWatcher->CheckJumpWatch(r_pc)){
+			mWatcher->ReportJumpWatch(r_pc, eWatcherJumpRoutine);
+		}
 	}
 }
 
@@ -1317,6 +1344,12 @@ void CMOS6510::F_LSR(u8 addressmode){
 		r_a = m;	
 	}else{
 		mMemory->Poke(address, m);
+
+		if(mWatcher != NULL){
+			if(mWatcher->CheckWriteWatch(address)){
+				mWatcher->ReportWriteWatch(address);
+			}
+		}
 	}
 }
 
@@ -1442,6 +1475,12 @@ void CMOS6510::F_ROL(u8 addressmode){
 		r_a = m;	
 	}else{
 		mMemory->Poke(address, m);
+
+		if(mWatcher != NULL){
+			if(mWatcher->CheckWriteWatch(address)){
+				mWatcher->ReportWriteWatch(address);
+			}
+		}
 	}
 }
 
@@ -1599,6 +1638,12 @@ void CMOS6510::F_STA(u8 addressmode){
 	GetOperandAddress(addressmode, &address);
 	
 	mMemory->Poke(address, r_a);
+
+	if(mWatcher != NULL){
+		if(mWatcher->CheckWriteWatch(address)){
+			mWatcher->ReportWriteWatch(address);
+		}
+	}
 }
 
 
@@ -1611,6 +1656,12 @@ void CMOS6510::F_STX(u8 addressmode){
 	GetOperandAddress(addressmode, &address);
 
 	mMemory->Poke(address, r_x);
+
+	if(mWatcher != NULL){
+		if(mWatcher->CheckWriteWatch(address)){
+			mWatcher->ReportWriteWatch(address);
+		}
+	}
 }
 
 
@@ -1623,6 +1674,12 @@ void CMOS6510::F_STY(u8 addressmode){
 	GetOperandAddress(addressmode, &address);
 
 	mMemory->Poke(address, r_y);
+
+	if(mWatcher != NULL){
+		if(mWatcher->CheckWriteWatch(address)){
+			mWatcher->ReportWriteWatch(address);
+		}
+	}
 }
 
 
@@ -1813,8 +1870,10 @@ void CMOS6510::IRQ(){
     _cycles += 7;
 //timer50Hz := timer50Hz+20
      
-	if (mWatcher != NULL){
-		mWatcher->CheckJumpWatch(r_pc, eWatcherJumpInterrupt);
+	if(mWatcher != NULL){
+		if(mWatcher->CheckJumpWatch(r_pc)){
+			mWatcher->ReportJumpWatch(r_pc, eWatcherJumpInterrupt);
+		}
 	}
 }
 
@@ -1826,7 +1885,9 @@ void CMOS6510::NMI(){
 	r_pc=mBus->Peek16(0xFFFA);
     _cycles += 7;
 
-	if (mWatcher != NULL){
-		mWatcher->CheckJumpWatch(r_pc, eWatcherJumpInterrupt);
+	if(mWatcher != NULL){
+		if(mWatcher->CheckJumpWatch(r_pc)){
+			mWatcher->ReportJumpWatch(r_pc, eWatcherJumpInterrupt);
+		}
 	}
 }

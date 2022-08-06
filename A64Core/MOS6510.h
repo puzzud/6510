@@ -227,7 +227,8 @@ public:
 	u8 Pop();
 	u16 Pop16();
 	//PC	
-	void SetPC(u16 address);	
+	u16 GetPC();
+	void SetPC(u16 address);
 	//IRQ
 	void SetIRQ(bool state);
 

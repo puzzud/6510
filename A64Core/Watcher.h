@@ -21,14 +21,27 @@ typedef enum _eWatcherJumpType{
 class CWatcher{
 private:
 	unsigned int mJumpWatches[0xFFFF];
+	unsigned int mReadWatches[0xFFFF];
+	unsigned int mWriteWatches[0xFFFF];
 protected:
-	virtual void ReportJumpWatch(u16 address, eWatcherJumpType jumpType) = 0;
 public:
 	CWatcher();
 	~CWatcher();
+
 	void SetJumpWatch(u16 address);
 	void ClearJumpWatch(u16 address);
-	bool CheckJumpWatch(u16 address, eWatcherJumpType jumpType);
+	bool CheckJumpWatch(u16 address);
+	virtual void ReportJumpWatch(u16 address, eWatcherJumpType jumpType) = 0;
+
+	void SetReadWatch(u16 address);
+	void ClearReadWatch(u16 address);
+	bool CheckReadWatch(u16 address);
+	virtual void ReportReadWatch(u16 address) = 0;
+
+	void SetWriteWatch(u16 address);
+	void ClearWriteWatch(u16 address);
+	bool CheckWriteWatch(u16 address);
+	virtual void ReportWriteWatch(u16 address) = 0;
 };
 
 #endif //WATCHER_H
