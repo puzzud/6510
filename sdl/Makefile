@@ -14,7 +14,8 @@ CORE_CPP = ../A64Core/MOS6510.cpp \
     ../A64Core/MOS6569.cpp \
     ../A64Core/MOS6581.cpp \
     ../A64Core/Ram.cpp \
-    ../A64Core/Util.cpp 
+    ../A64Core/Util.cpp \
+    ../A64Core/Watcher.cpp
 
 MAIN_CPP = ../sdl/main.cpp
 
