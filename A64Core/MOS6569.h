@@ -44,7 +44,7 @@
 #define HARDWARE_SPRITE_WIDTH                24
 #define HARDWARE_SPRITE_HEIGHT               21
 #define HARDWARE_SPRITE_X_POSITION_MAX       511
-#define HARDWARE_SPRITE_COLOR_BUFFER_SIZE    (HARDWARE_SPRITE_X_POSITION_MAX + (HARDWARE_SPRITE_WIDTH * 2))
+#define HARDWARE_SPRITE_PIXEL_BUFFER_SIZE    (HARDWARE_SPRITE_X_POSITION_MAX + (HARDWARE_SPRITE_WIDTH * 2))
 #define HARDWARE_SPRITE_BYTE_COUNT           63 /* 3 bytes per row. 21 rows */
 #define HARDWARE_SPRITE_DATA_BLOCK_SIZE      (HARDWARE_SPRITE_BYTE_COUNT + 1) /* 64 */
 
@@ -87,7 +87,7 @@ class CMOS6569 : public CDevice{
 		// Note that each line is long enough to contain
 		// double width sprites at their max X position,
 		// done so to prevent overflow and bound checking.
-		u8 spriteFieldLinePixelColorBuffers[NUMBER_OF_HARDWARE_SPRITES][HARDWARE_SPRITE_COLOR_BUFFER_SIZE];
+		u8 spriteFieldLinePixelColorBuffers[NUMBER_OF_HARDWARE_SPRITES][HARDWARE_SPRITE_PIXEL_BUFFER_SIZE];
 	protected:
 	public:
 		CMOS6569();

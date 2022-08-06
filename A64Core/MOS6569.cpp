@@ -49,6 +49,8 @@ void CMOS6569::Cycle(){
 	if (++perLineClockCycle == NTSC_FIELD_CYCLES_PER_LINE){
 		perLineClockCycle = 0;
 
+		TestSpriteCollision();
+
 		if (mRenderer != NULL){
 			mRenderer->OnRasterLineCompleted((unsigned int)rasterLine);
 		}
@@ -61,8 +63,6 @@ void CMOS6569::Cycle(){
 		if (rasterLine == rasterLineCompare){
 			mRegs[0xD019 - 0xD000] |= 0x81; // Mark possible interrupt flags.
 		}
-
-		//TestSpriteCollision();
 	}
 
 	bool rasterLineCompareIrqEnabled = (mRegs[0xD01A - 0xD000] & 0x01) != 0;
@@ -93,6 +93,13 @@ u8 CMOS6569::Peek(u16 address){
 			return val;
 		}else if (address == 0xD012){
 			return (u8)(rasterLine & 0xFF);
+		}else if(address == 0xD01E){
+			u8 val = mRegs[address-0xD000];
+			mRegs[address-0xD000] = 0;
+			return val;
+		}else if(address == 0xD01F){
+			//cout << "Peeked sprite-background collision." << endl;
+			mRegs[address-0xD000] = 0;
 		}
 
 		return mRegs[address - 0xD000];
@@ -119,6 +126,10 @@ int CMOS6569::Poke(u16 address, u8 val){
 			if ((val & 0x0F) != 0){
 				val |= 0x80;
 			}
+		}else if(address == 0xD01E){
+			return 0; // Can't poke into this register.
+		}else if(address == 0xD01F){
+			return 0; // Can't poke into this register.
 		}else if (address == 0xD020){
 			mRenderer->SetBorderColor(val);
 		}else if (address == 0xD021){
@@ -232,20 +243,57 @@ bool CMOS6569::IsSpriteMultiColor(unsigned int spriteIndex){
 
 void CMOS6569::TestSpriteCollision(){
 	memset(spriteFieldLinePixelColorBuffers, 0,
-		NUMBER_OF_HARDWARE_SPRITES * HARDWARE_SPRITE_COLOR_BUFFER_SIZE);
+		NUMBER_OF_HARDWARE_SPRITES * HARDWARE_SPRITE_PIXEL_BUFFER_SIZE);
 	
 	for (int spriteIndex = 0; spriteIndex < NUMBER_OF_HARDWARE_SPRITES; ++spriteIndex){
-		u8* spriteFieldLinePixelColorBuffer = (u8*)&spriteFieldLinePixelColorBuffers[spriteIndex];
+		if (!IsSpriteEnabled(spriteIndex)){
+			continue;
+		}
+		
+		if (!IsSpriteOnLine(spriteIndex, rasterLine)){
+			continue;
+		}
 
 		// Go forward as many sprite lines (3 bytes) to match up to this line based on position.
 		u8 spriteRowIndex =
 			(rasterLine - GetSpriteYPosition(spriteIndex)) / GetSpriteVerticalScale(spriteIndex);
+
+		u8* spriteFieldLinePixelColorBuffer = (u8*)&spriteFieldLinePixelColorBuffers[spriteIndex];
 
 		DrawSpriteRowToBuffer(
 			spriteIndex,
 			spriteRowIndex,
 			spriteFieldLinePixelColorBuffer + GetSpriteXPosition(spriteIndex));
 	}
+
+	u8 spriteSpriteCollisions = mRegs[0xD01E - 0xD000];
+
+	for (int x = 0; x < HARDWARE_SPRITE_PIXEL_BUFFER_SIZE; ++x){
+		static u8 spritesPixelsThisX[NUMBER_OF_HARDWARE_SPRITES];
+		u8 numberOfSpritesThisX = 0;
+
+		for (int spriteIndex = 0; spriteIndex < NUMBER_OF_HARDWARE_SPRITES; ++spriteIndex){
+			u8* spriteFieldLinePixelColorBuffer = (u8*)&spriteFieldLinePixelColorBuffers[spriteIndex];
+
+			u8 pixelColor = spriteFieldLinePixelColorBuffer[x];
+			spritesPixelsThisX[spriteIndex] = pixelColor;
+			if (pixelColor != 0){
+				++numberOfSpritesThisX;
+			}
+		}
+
+		if (numberOfSpritesThisX > 1){
+			u8 collisionsThisX = 0;
+
+			for (int spriteIndex = 0; spriteIndex < NUMBER_OF_HARDWARE_SPRITES; ++spriteIndex){
+				collisionsThisX |= (spritesPixelsThisX[spriteIndex] == 0 ? 0 : 1 << spriteIndex);
+			}
+
+			spriteSpriteCollisions |= collisionsThisX;
+		}
+	}
+
+	mRegs[0xD01E - 0xD000] |= spriteSpriteCollisions;
 }
 
 
