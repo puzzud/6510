@@ -98,6 +98,7 @@ class CustomWatcher : public CWatcher
 {
     public:
 	protected:
+	
 	virtual void ReportJumpWatch(u16 address, eWatcherJumpType jumpType)
 	{
 		cout << "Jump: " << std::hex << int(address) << std::dec << endl;
@@ -112,6 +113,17 @@ class CustomWatcher : public CWatcher
 			}
 		}
 	};
+
+	virtual void ReportReadWatch(u16 address)
+	{
+		cout << "Read: " << std::hex << int(address) << std::dec << endl;
+	}
+
+	virtual void ReportWriteWatch(u16 address)
+	{
+		cout << "Write: " << std::hex << int(address) << std::dec << endl;
+	}
+
     private:
 };
 
