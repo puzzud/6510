@@ -110,6 +110,9 @@ class CustomWatcher : public CWatcher
 				cout << "Loaded M" << endl;
 				cbm64->GetCpu()->SetPC(0x4000);
 				
+				ClearJumpWatch(0x655B);
+
+				SetWriteWatch(0xDF12);
 			}
 		}
 	};
@@ -121,6 +124,15 @@ class CustomWatcher : public CWatcher
 
 	virtual void ReportWriteWatch(u16 address)
 	{
+		if (address == 0xDF12)
+		{
+			cout  << std::hex;
+			cout << "Write: " << int(address);
+			cout << " at PC: " << int(cbm64->GetCpu()->GetPC());
+			cout << std::dec << endl;
+			return;
+		}
+
 		cout << "Write: " << std::hex << int(address) << std::dec << endl;
 	}
 
