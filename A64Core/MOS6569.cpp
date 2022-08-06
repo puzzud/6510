@@ -98,8 +98,9 @@ u8 CMOS6569::Peek(u16 address){
 			mRegs[address-0xD000] = 0;
 			return val;
 		}else if(address == 0xD01F){
-			//cout << "Peeked sprite-background collision." << endl;
+			u8 val = mRegs[address-0xD000];
 			mRegs[address-0xD000] = 0;
+			return val;
 		}
 
 		return mRegs[address - 0xD000];
@@ -291,23 +292,35 @@ void CMOS6569::TestSpriteCollision(){
 			}
 		}
 
+		// Sprite to sprite.
 		if (numberOfSpritesThisX > 1){
-			u8 backgroundPixelThisX = backgroundFieldLinePixelColorBuffer[x];
-
 			u8 spriteSpriteCollisionsThisX = 0;
-			u8 spriteBackgroundCollisionsThisX = 0;
 
 			for (int spriteIndex = 0; spriteIndex < NUMBER_OF_HARDWARE_SPRITES; ++spriteIndex){
-				if (spritesPixelsThisX[spriteIndex] != 0){
-					spriteSpriteCollisionsThisX |= (1 << spriteIndex);
-
-					if (backgroundPixelThisX != 0){
-						spriteBackgroundCollisionsThisX |= (1 << spriteIndex);
-					}
+				if (spritesPixelsThisX[spriteIndex] == 0){
+					continue;
 				}
+				
+				spriteSpriteCollisionsThisX |= (1 << spriteIndex);
 			}
 
 			spriteSpriteCollisions |= spriteSpriteCollisionsThisX;
+		}
+
+		// Sprite to background.
+		u8 backgroundPixelThisX = backgroundFieldLinePixelColorBuffer[x];
+
+		if ((numberOfSpritesThisX > 0) && (backgroundPixelThisX != 0)){
+			u8 spriteBackgroundCollisionsThisX = 0;
+
+			for (int spriteIndex = 0; spriteIndex < NUMBER_OF_HARDWARE_SPRITES; ++spriteIndex){
+				if (spritesPixelsThisX[spriteIndex] == 0){
+					continue;
+				}
+
+				spriteBackgroundCollisionsThisX |= (1 << spriteIndex);
+			}
+
 			spriteBackgroundCollisions |= spriteBackgroundCollisionsThisX;
 		}
 	}
