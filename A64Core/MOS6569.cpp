@@ -242,9 +242,16 @@ bool CMOS6569::IsSpriteMultiColor(unsigned int spriteIndex){
 
 
 void CMOS6569::TestSpriteCollision(){
+	memset(backgroundFieldLinePixelColorBuffer, 0, HARDWARE_SPRITE_PIXEL_BUFFER_SIZE);
+
 	memset(spriteFieldLinePixelColorBuffers, 0,
 		NUMBER_OF_HARDWARE_SPRITES * HARDWARE_SPRITE_PIXEL_BUFFER_SIZE);
-	
+
+	// HARDWARE_SPRITE_TO_SCREEN_X_OFFSET accounts for
+	// border and HBlank to match with screen background.
+	DrawBackgroundRowToBuffer(rasterLine,
+		backgroundFieldLinePixelColorBuffer + HARDWARE_SPRITE_TO_SCREEN_X_OFFSET);
+
 	for (int spriteIndex = 0; spriteIndex < NUMBER_OF_HARDWARE_SPRITES; ++spriteIndex){
 		if (!IsSpriteEnabled(spriteIndex)){
 			continue;
@@ -266,7 +273,9 @@ void CMOS6569::TestSpriteCollision(){
 			spriteFieldLinePixelColorBuffer + GetSpriteXPosition(spriteIndex));
 	}
 
+	// Actually check & retain collisions.
 	u8 spriteSpriteCollisions = mRegs[0xD01E - 0xD000];
+	u8 spriteBackgroundCollisions = mRegs[0xD01F - 0xD000];
 
 	for (int x = 0; x < HARDWARE_SPRITE_PIXEL_BUFFER_SIZE; ++x){
 		static u8 spritesPixelsThisX[NUMBER_OF_HARDWARE_SPRITES];
@@ -283,17 +292,28 @@ void CMOS6569::TestSpriteCollision(){
 		}
 
 		if (numberOfSpritesThisX > 1){
-			u8 collisionsThisX = 0;
+			u8 backgroundPixelThisX = backgroundFieldLinePixelColorBuffer[x];
+
+			u8 spriteSpriteCollisionsThisX = 0;
+			u8 spriteBackgroundCollisionsThisX = 0;
 
 			for (int spriteIndex = 0; spriteIndex < NUMBER_OF_HARDWARE_SPRITES; ++spriteIndex){
-				collisionsThisX |= (spritesPixelsThisX[spriteIndex] == 0 ? 0 : 1 << spriteIndex);
+				if (spritesPixelsThisX[spriteIndex] != 0){
+					spriteSpriteCollisionsThisX |= (1 << spriteIndex);
+
+					if (backgroundPixelThisX != 0){
+						spriteBackgroundCollisionsThisX |= (1 << spriteIndex);
+					}
+				}
 			}
 
-			spriteSpriteCollisions |= collisionsThisX;
+			spriteSpriteCollisions |= spriteSpriteCollisionsThisX;
+			spriteBackgroundCollisions |= spriteBackgroundCollisionsThisX;
 		}
 	}
 
 	mRegs[0xD01E - 0xD000] |= spriteSpriteCollisions;
+	mRegs[0xD01F - 0xD000] |= spriteBackgroundCollisions;
 }
 
 
