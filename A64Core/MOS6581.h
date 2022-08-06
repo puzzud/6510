@@ -17,8 +17,12 @@
 #include "Bus.h"
 
 
+#define SID_NUMBER_OF_REGISTERS           30
+
+
 class CMOS6581 : public CDevice{
 	private:
+		u8 mRegs[SID_NUMBER_OF_REGISTERS];
 	protected:
 	public:
 		CMOS6581();
