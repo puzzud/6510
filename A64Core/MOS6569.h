@@ -44,9 +44,11 @@
 #define HARDWARE_SPRITE_WIDTH                24
 #define HARDWARE_SPRITE_HEIGHT               21
 #define HARDWARE_SPRITE_X_POSITION_MAX       511
-#define HARDWARE_SPRITE_COLOR_BUFFER_SIZE    (HARDWARE_SPRITE_X_POSITION_MAX + (HARDWARE_SPRITE_WIDTH * 2))
+#define HARDWARE_SPRITE_PIXEL_BUFFER_SIZE    (HARDWARE_SPRITE_X_POSITION_MAX + (HARDWARE_SPRITE_WIDTH * 2))
 #define HARDWARE_SPRITE_BYTE_COUNT           63 /* 3 bytes per row. 21 rows */
 #define HARDWARE_SPRITE_DATA_BLOCK_SIZE      (HARDWARE_SPRITE_BYTE_COUNT + 1) /* 64 */
+#define HARDWARE_SPRITE_TO_SCREEN_X_OFFSET   24
+#define HARDWARE_SPRITE_TO_SCREEN_Y_OFFSET   50
 
 class CVICHWScreen{
 public:
@@ -80,14 +82,24 @@ class CMOS6569 : public CDevice{
 		CBus* mBus;
 		CVICHWScreen* mRenderer;
 
-		// Used for determining sprite collisions.
-		// Maybe used in future to actually render sprites.
+		// Used for determining sprite to sprite collisions.
+		// TODO: Maybe used in future to actually render sprites.
 		// Each sprite gets a dedicated line which is then
 		// used to compare between each sprite.
 		// Note that each line is long enough to contain
 		// double width sprites at their max X position,
 		// done so to prevent overflow and bound checking.
-		u8 spriteFieldLinePixelColorBuffers[NUMBER_OF_HARDWARE_SPRITES][HARDWARE_SPRITE_COLOR_BUFFER_SIZE];
+		u8 spriteFieldLinePixelColorBuffers[NUMBER_OF_HARDWARE_SPRITES][HARDWARE_SPRITE_PIXEL_BUFFER_SIZE];
+		
+		// Used for determine sprite to background collisions.
+		// TODO: Also maybe used in future to actually render backgrounds
+		// (with proper sprite priority).
+		// Note that each line is the same length as
+		// spriteFieldLinePixelColorBuffers.
+		// Note that background colors (especially in case of extended color mode),
+		// are not rendered to preserve transparency
+		// for collision purposes.
+		u8 backgroundFieldLinePixelColorBuffer[HARDWARE_SPRITE_PIXEL_BUFFER_SIZE];
 	protected:
 	public:
 		CMOS6569();
@@ -125,7 +137,8 @@ class CMOS6569 : public CDevice{
 		void RegisterHWScreen(CVICHWScreen* screen);
 		void HWNeedsRedraw();
 
-		void DrawByteToBuffer(u8 byte, u8* pixelColorBuffer, u8* colorCodes, int mode, bool multiColor, unsigned int horizontalScale);
+		void DrawByteToBuffer(u8 byte, u8* pixelColorBuffer, u8* colorCodes, int mode, bool multiColor, unsigned int horizontalScale = 1);
+		void DrawBackgroundRowToBuffer(unsigned int fieldLineNumber, u8* pixelColorBuffer);
 		void DrawSpriteRowToBuffer(unsigned int spriteIndex, unsigned int rowIndex, u8* pixelColorBuffer);
 };
 

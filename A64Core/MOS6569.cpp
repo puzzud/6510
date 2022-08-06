@@ -49,6 +49,8 @@ void CMOS6569::Cycle(){
 	if (++perLineClockCycle == NTSC_FIELD_CYCLES_PER_LINE){
 		perLineClockCycle = 0;
 
+		TestSpriteCollision();
+
 		if (mRenderer != NULL){
 			mRenderer->OnRasterLineCompleted((unsigned int)rasterLine);
 		}
@@ -61,8 +63,6 @@ void CMOS6569::Cycle(){
 		if (rasterLine == rasterLineCompare){
 			mRegs[0xD019 - 0xD000] |= 0x81; // Mark possible interrupt flags.
 		}
-
-		//TestSpriteCollision();
 	}
 
 	bool rasterLineCompareIrqEnabled = (mRegs[0xD01A - 0xD000] & 0x01) != 0;
@@ -93,6 +93,13 @@ u8 CMOS6569::Peek(u16 address){
 			return val;
 		}else if (address == 0xD012){
 			return (u8)(rasterLine & 0xFF);
+		}else if(address == 0xD01E){
+			u8 val = mRegs[address-0xD000];
+			mRegs[address-0xD000] = 0;
+			return val;
+		}else if(address == 0xD01F){
+			//cout << "Peeked sprite-background collision." << endl;
+			mRegs[address-0xD000] = 0;
 		}
 
 		return mRegs[address - 0xD000];
@@ -119,6 +126,10 @@ int CMOS6569::Poke(u16 address, u8 val){
 			if ((val & 0x0F) != 0){
 				val |= 0x80;
 			}
+		}else if(address == 0xD01E){
+			return 0; // Can't poke into this register.
+		}else if(address == 0xD01F){
+			return 0; // Can't poke into this register.
 		}else if (address == 0xD020){
 			mRenderer->SetBorderColor(val);
 		}else if (address == 0xD021){
@@ -155,14 +166,14 @@ u16 CMOS6569::GetSpritePointersMemoryOffset(){
 
 
 bool CMOS6569::IsSpriteEnabled(unsigned int spriteIndex){
-	u8 spriteEnable = Peek(0xD015);
+	u8 spriteEnable = mRegs[0xD015-0xD000];
 	return (spriteEnable & (1 << spriteIndex)) != 0;
 }
 
 
 u16 CMOS6569::GetSpriteXPosition(unsigned int spriteIndex){
-	u8 spriteXPositionMsbs = Peek(0xD010);
-	u8 spriteXPositionLsb = Peek(0xD000 + (spriteIndex * 2));
+	u8 spriteXPositionMsbs = mRegs[0xD010-0xD000];
+	u8 spriteXPositionLsb = mRegs[0xD000-0xD000 + (spriteIndex * 2)];
 
 	u16 spriteXPosition = spriteXPositionLsb;
 	if ((spriteXPositionMsbs & (1 << spriteIndex)) != 0){
@@ -174,18 +185,18 @@ u16 CMOS6569::GetSpriteXPosition(unsigned int spriteIndex){
 
 
 u8 CMOS6569::GetSpriteYPosition(unsigned int spriteIndex){
-	return Peek(0xD001 + (spriteIndex * 2));
+	return mRegs[0xD001-0xD000 + (spriteIndex * 2)];
 }
 
 
 unsigned int CMOS6569::GetSpriteHorizontalScale(unsigned int spriteIndex){
-	u8 spriteXExpands = Peek(0xD01D);
+	u8 spriteXExpands = mRegs[0xD01D-0xD000];
 	return ((spriteXExpands & (1 << spriteIndex)) != 0) ? 2 : 1;
 }
 
 
 unsigned int CMOS6569::GetSpriteVerticalScale(unsigned int spriteIndex){
-	u8 spriteYExpands = Peek(0xD017);
+	u8 spriteYExpands = mRegs[0xD017-0xD000];
 	return ((spriteYExpands & (1 << spriteIndex)) != 0) ? 2 : 1;
 }
 
@@ -220,32 +231,89 @@ u16 CMOS6569::GetSpriteDataMemoryOffset(unsigned int spriteIndex){
 
 
 u8 CMOS6569::GetSpriteColor(unsigned int spriteIndex){
-	return Peek(0xD027 + spriteIndex) & 0x0F;
+	return mRegs[0xD027-0xD000 + spriteIndex] & 0x0F;
 }
 
 
 bool CMOS6569::IsSpriteMultiColor(unsigned int spriteIndex){
-	u8 spriteMultiColor = Peek(0xD01C);
+	u8 spriteMultiColor = mRegs[0xD01C-0xD000];
 	return (spriteMultiColor & (1 << spriteIndex)) != 0;
 }
 
 
 void CMOS6569::TestSpriteCollision(){
+	memset(backgroundFieldLinePixelColorBuffer, 0, HARDWARE_SPRITE_PIXEL_BUFFER_SIZE);
+
 	memset(spriteFieldLinePixelColorBuffers, 0,
-		NUMBER_OF_HARDWARE_SPRITES * HARDWARE_SPRITE_COLOR_BUFFER_SIZE);
-	
+		NUMBER_OF_HARDWARE_SPRITES * HARDWARE_SPRITE_PIXEL_BUFFER_SIZE);
+
+	// HARDWARE_SPRITE_TO_SCREEN_X_OFFSET accounts for
+	// border and HBlank to match with screen background.
+	DrawBackgroundRowToBuffer(rasterLine,
+		backgroundFieldLinePixelColorBuffer + HARDWARE_SPRITE_TO_SCREEN_X_OFFSET);
+
 	for (int spriteIndex = 0; spriteIndex < NUMBER_OF_HARDWARE_SPRITES; ++spriteIndex){
-		u8* spriteFieldLinePixelColorBuffer = (u8*)&spriteFieldLinePixelColorBuffers[spriteIndex];
+		if (!IsSpriteEnabled(spriteIndex)){
+			continue;
+		}
+		
+		if (!IsSpriteOnLine(spriteIndex, rasterLine)){
+			continue;
+		}
 
 		// Go forward as many sprite lines (3 bytes) to match up to this line based on position.
 		u8 spriteRowIndex =
 			(rasterLine - GetSpriteYPosition(spriteIndex)) / GetSpriteVerticalScale(spriteIndex);
+
+		u8* spriteFieldLinePixelColorBuffer = (u8*)&spriteFieldLinePixelColorBuffers[spriteIndex];
 
 		DrawSpriteRowToBuffer(
 			spriteIndex,
 			spriteRowIndex,
 			spriteFieldLinePixelColorBuffer + GetSpriteXPosition(spriteIndex));
 	}
+
+	// Actually check & retain collisions.
+	u8 spriteSpriteCollisions = mRegs[0xD01E - 0xD000];
+	u8 spriteBackgroundCollisions = mRegs[0xD01F - 0xD000];
+
+	for (int x = 0; x < HARDWARE_SPRITE_PIXEL_BUFFER_SIZE; ++x){
+		static u8 spritesPixelsThisX[NUMBER_OF_HARDWARE_SPRITES];
+		u8 numberOfSpritesThisX = 0;
+
+		for (int spriteIndex = 0; spriteIndex < NUMBER_OF_HARDWARE_SPRITES; ++spriteIndex){
+			u8* spriteFieldLinePixelColorBuffer = (u8*)&spriteFieldLinePixelColorBuffers[spriteIndex];
+
+			u8 pixelColor = spriteFieldLinePixelColorBuffer[x];
+			spritesPixelsThisX[spriteIndex] = pixelColor;
+			if (pixelColor != 0){
+				++numberOfSpritesThisX;
+			}
+		}
+
+		if (numberOfSpritesThisX > 1){
+			u8 backgroundPixelThisX = backgroundFieldLinePixelColorBuffer[x];
+
+			u8 spriteSpriteCollisionsThisX = 0;
+			u8 spriteBackgroundCollisionsThisX = 0;
+
+			for (int spriteIndex = 0; spriteIndex < NUMBER_OF_HARDWARE_SPRITES; ++spriteIndex){
+				if (spritesPixelsThisX[spriteIndex] != 0){
+					spriteSpriteCollisionsThisX |= (1 << spriteIndex);
+
+					if (backgroundPixelThisX != 0){
+						spriteBackgroundCollisionsThisX |= (1 << spriteIndex);
+					}
+				}
+			}
+
+			spriteSpriteCollisions |= spriteSpriteCollisionsThisX;
+			spriteBackgroundCollisions |= spriteBackgroundCollisionsThisX;
+		}
+	}
+
+	mRegs[0xD01E - 0xD000] |= spriteSpriteCollisions;
+	mRegs[0xD01F - 0xD000] |= spriteBackgroundCollisions;
 }
 
 
@@ -333,13 +401,56 @@ void CMOS6569::DrawByteToBuffer(u8 byte, u8* pixelColorBuffer, u8* colorCodes, i
 	}
 }
 
+
+void CMOS6569::DrawBackgroundRowToBuffer(unsigned int fieldLineNumber, u8* pixelColorBuffer){
+	u16 vicMemoryBankStartAddress = mBus->GetVicMemoryBankStartAddress();
+	u16 vicScreenMemoryStartAddress = vicMemoryBankStartAddress + GetScreenMemoryOffset();
+	u16 vicCharacterMemoryStartAddress = vicMemoryBankStartAddress + GetCharacterMemoryOffset();
+	
+	static u8 colorCodes[3];
+	bool multiColorCharacters = (mRegs[0xD016-0xD000] & 0x10) != 0;
+	if (multiColorCharacters)
+	{
+		colorCodes[0] = mRegs[0xD022-0xD000] & 0x0F;
+		colorCodes[1] = mRegs[0xD023-0xD000] & 0x0F;
+	}
+
+	int screenLineNumber = fieldLineNumber - HARDWARE_SPRITE_TO_SCREEN_Y_OFFSET;
+	unsigned int rowIndex = screenLineNumber / CHARACTER_HEIGHT;
+	unsigned int characterRowIndex = screenLineNumber % CHARACTER_HEIGHT;
+
+	// 1 column (1 byte) per cycle.
+	for (unsigned int columnIndex = 0; columnIndex < SCREEN_CHAR_WIDTH; ++columnIndex)
+	{
+		int characterScreenMemoryOffset = (rowIndex * SCREEN_CHAR_WIDTH) + columnIndex;
+
+		colorCodes[2] = mBus->PeekDevice(eBusVic, 0xD800 + characterScreenMemoryOffset) & 0x0F;
+
+		unsigned char shapeCode = mBus->PeekDevice(eBusRam, vicScreenMemoryStartAddress + characterScreenMemoryOffset);
+		int characterRomCharOffset = shapeCode * CHARACTER_HEIGHT;
+		
+		mBus->SetMode(eBusModeVic);
+		unsigned char charRowByte = mBus->Peek(vicCharacterMemoryStartAddress + characterRomCharOffset + characterRowIndex);
+
+		DrawByteToBuffer(
+			charRowByte,
+			pixelColorBuffer,
+			colorCodes,
+			0,
+			multiColorCharacters);
+		
+		pixelColorBuffer += 8; // NOTE: Mutates function argument.
+	}
+}
+
+
 void CMOS6569::DrawSpriteRowToBuffer(unsigned int spriteIndex, unsigned int rowIndex, u8* pixelColorBuffer){
 	u16 vicMemoryBankStartAddress = mBus->GetVicMemoryBankStartAddress();
 	
 	static u8 colorCodes[3];
-	colorCodes[0] = Peek(0xD025) & 0x0F;
+	colorCodes[0] = mRegs[0xD025-0xD000] & 0x0F;
 	colorCodes[1] = GetSpriteColor(spriteIndex);
-	colorCodes[2] = Peek(0xD026) & 0x0F;
+	colorCodes[2] = mRegs[0xD026-0xD000] & 0x0F;
 
 	u16 spriteDataAddress = vicMemoryBankStartAddress +
 		GetSpriteDataMemoryOffset(spriteIndex);
@@ -361,6 +472,6 @@ void CMOS6569::DrawSpriteRowToBuffer(unsigned int spriteIndex, unsigned int rowI
 			IsSpriteMultiColor(spriteIndex),
 			spriteHorizontalScale);
 		
-		pixelColorBuffer += (spriteHorizontalScale * 8);
+		pixelColorBuffer += (spriteHorizontalScale * 8); // NOTE: Mutates function argument.
 	}
 }

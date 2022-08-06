@@ -600,8 +600,7 @@ void DrawBufferOnLine(u16 screenXPosition, u8 screenYPosition, u8* pixelColorBuf
 void DrawScreenLine(unsigned int lineNumber)
 {
 	// TODO: Figure out this number!
-#define SCREEN_START_FIELD_LINE 50
-	int screenLineNumber = lineNumber - SCREEN_START_FIELD_LINE;
+	int screenLineNumber = lineNumber - HARDWARE_SPRITE_TO_SCREEN_Y_OFFSET;
 	if (screenLineNumber < 0)
 	{
 		return;
@@ -612,12 +611,10 @@ void DrawScreenLine(unsigned int lineNumber)
 		return;
 	}
 
-	auto bus = CBus::GetInstance();
 	auto vic = cbm64->GetVic();
-	u16 vicMemoryBankStartAddress = bus->GetVicMemoryBankStartAddress();
-	u16 vicScreenMemoryStartAddress = vicMemoryBankStartAddress + vic->GetScreenMemoryOffset();
-	u16 vicCharacterMemoryStartAddress = vicMemoryBankStartAddress + vic->GetCharacterMemoryOffset();
 
+	// Draw background.
+	// TODO: Does not account for background color in extended color mode.
 	SDL_Rect rect;
 	rect.y = screenLineNumber;
 	rect.h = 1;
@@ -629,39 +626,24 @@ void DrawScreenLine(unsigned int lineNumber)
 	SDL_SetRenderDrawColor(Renderer, backgroundColor->r, backgroundColor->g, backgroundColor->b, backgroundColor->a);
 	SDL_RenderFillRect(Renderer, &rect);
 
-	static u8 colorCodes[3];
-	bool multiColorCharacters = (bus->PeekDevice(eBusVic, 0xD016) & 0x10) != 0;
-	if (multiColorCharacters)
-	{
-		colorCodes[0] = bus->PeekDevice(eBusVic, 0xD022) & 0x0F;
-		colorCodes[1] = bus->PeekDevice(eBusVic, 0xD023) & 0x0F;
-	}
+	// Draw background.
+	static u8 pixelColorBuffer[HARDWARE_SPRITE_PIXEL_BUFFER_SIZE];
+	memset(pixelColorBuffer, 0, HARDWARE_SPRITE_PIXEL_BUFFER_SIZE);
 
-	rect.w = 0;
+	// HARDWARE_SPRITE_TO_SCREEN_X_OFFSET accounts for
+	// border and HBlank to match with screen background.
+	vic->DrawBackgroundRowToBuffer(lineNumber, pixelColorBuffer + HARDWARE_SPRITE_TO_SCREEN_X_OFFSET);
+				
+	DrawBufferOnLine(
+		0,
+		screenLineNumber,
+		pixelColorBuffer + HARDWARE_SPRITE_TO_SCREEN_X_OFFSET,
+		SCREEN_WIDTH);
 
-	unsigned int rowIndex = screenLineNumber / CHARACTER_HEIGHT;
-	unsigned int characterRowIndex = screenLineNumber % CHARACTER_HEIGHT;
-
-	// 1 column (1 byte) per cycle.
-	for (unsigned int columnIndex = 0; columnIndex < SCREEN_CHAR_WIDTH; ++columnIndex)
-	{
-		int characterScreenMemoryOffset = (rowIndex * SCREEN_CHAR_WIDTH) + columnIndex;
-
-		unsigned char colorCode = bus->PeekDevice(eBusVic, 0xD800 + characterScreenMemoryOffset) & 0x0F;
-		colorCodes[2] = colorCode;
-
-		unsigned char shapeCode = bus->PeekDevice(eBusRam, vicScreenMemoryStartAddress + characterScreenMemoryOffset);
-		int characterRomCharOffset = shapeCode * CHARACTER_HEIGHT;
-		
-		bus->SetMode(eBusModeVic);
-		unsigned char charRowByte = bus->Peek(vicCharacterMemoryStartAddress + characterRomCharOffset + characterRowIndex);
-
-		DrawByte(charRowByte, colorCodes, (columnIndex * CHARACTER_WIDTH), rect.y, 0, multiColorCharacters);
-	}
-
-	// Draw horizontal slices of sprite rectangles (for now).
+	// Draw sprites.
 	// NOTE: Drawing all of them afterwards ignores the sprite
 	// to background priority VIC setting.
+	auto bus = CBus::GetInstance();
 	u8 spriteEnable = bus->PeekDevice(eBusVic, 0xD015);
 	if (spriteEnable != 0)
 	{
@@ -678,16 +660,18 @@ void DrawScreenLine(unsigned int lineNumber)
 				u8 spriteYPosition = vic->GetSpriteYPosition(spriteIndex);
 				u8 spriteRowOffset = (lineNumber - spriteYPosition) / vic->GetSpriteVerticalScale(spriteIndex);
 
-				static u8 pixelColorBuffer[8 * 3 * 2];  // 48 bytes in case of horizontal scaling.
-				memset(pixelColorBuffer, 0, 8 * 3 * 2);
+				// 48 bytes in case of horizontal scaling.
+				static u8 pixelColorBuffer[HARDWARE_SPRITE_WIDTH * 2];
+				memset(pixelColorBuffer, 0, HARDWARE_SPRITE_WIDTH * 2);
 				
-				cbm64->GetVic()->DrawSpriteRowToBuffer(spriteIndex, spriteRowOffset, pixelColorBuffer);
+				vic->DrawSpriteRowToBuffer(spriteIndex, spriteRowOffset, pixelColorBuffer);
 				
+				// Adjust X for border and HBlank to match with background.
 				DrawBufferOnLine(
-					vic->GetSpriteXPosition(spriteIndex) - 24, // Adjust for border and HBlank to match with background.
+					vic->GetSpriteXPosition(spriteIndex) - HARDWARE_SPRITE_TO_SCREEN_X_OFFSET,
 					screenLineNumber,
 					pixelColorBuffer,
-					24 * vic->GetSpriteHorizontalScale(spriteIndex));
+					vic->GetSpriteWidth(spriteIndex));
 			}
 		}
 	}
