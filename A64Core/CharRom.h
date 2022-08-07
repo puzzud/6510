@@ -26,6 +26,7 @@ class CCharRom : public CDevice{
 		void GetDefaultAddressRange(u16 *from, u16 *to);
 	public:
 		CCharRom();
+		virtual ~CCharRom(){}
 		
 		u8 GetDeviceID();
 		u8 Peek(u16 address);

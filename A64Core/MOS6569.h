@@ -103,6 +103,7 @@ class CMOS6569 : public CDevice{
 	protected:
 	public:
 		CMOS6569();
+		virtual ~CMOS6569(){}
 		u8 GetDeviceID();
 
         void Cycle();

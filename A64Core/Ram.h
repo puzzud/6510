@@ -24,6 +24,7 @@ class CRam : public CDevice{
 		void GetDefaultAddressRange(u16 *from, u16 *to);
 	public:
 		CRam();
+		virtual ~CRam(){}
 		u8 GetDeviceID();
 		u8 Peek(u16 address);
 		int Poke(u16 address, u8 val); 

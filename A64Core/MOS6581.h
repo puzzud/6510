@@ -26,6 +26,7 @@ class CMOS6581 : public CDevice{
 	protected:
 	public:
 		CMOS6581();
+		virtual ~CMOS6581(){};
 		u8 GetDeviceID();
 
 		u8 Peek(u16 address);

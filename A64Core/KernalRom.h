@@ -27,6 +27,7 @@ class CKernalRom : public CDevice{
 		void GetDefaultAddressRange(u16 *from, u16 *to);
 	public:
 		CKernalRom();
+		virtual ~CKernalRom(){}
 		
 		u8 GetDeviceID();
 		u8 Peek(u16 address);

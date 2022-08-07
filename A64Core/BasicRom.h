@@ -26,6 +26,7 @@ class CBasicRom : public CDevice{
 		void GetDefaultAddressRange(u16 *from, u16 *to);
 	public:
 		CBasicRom();
+		virtual ~CBasicRom(){}
 		
 		u8 GetDeviceID();
 		u8 Peek(u16 address);

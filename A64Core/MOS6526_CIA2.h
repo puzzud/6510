@@ -27,7 +27,7 @@ private:
 protected:
 public:
 	CMOS6526CIA2(BKE_MUTEX mutex);
-	~CMOS6526CIA2();
+	virtual ~CMOS6526CIA2();
 
     void Cycle();
 

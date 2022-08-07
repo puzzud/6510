@@ -443,8 +443,6 @@ void OnInputKeyEvent(SDL_Event* event, unsigned int isDown)
 				if (it != SdlKeyCodeToCiaKeyMatrixMap.cend())
 				{
 					auto ciaKeyboardMatrixPair = &it->second;
-					ciaKeyboardMatrixPair->row;
-					ciaKeyboardMatrixPair->column;
 					cbm64->GetCia1()->SetKeyState(ciaKeyboardMatrixPair->row, ciaKeyboardMatrixPair->column, event->type == SDL_KEYDOWN);
 				}
 			}
@@ -546,7 +544,7 @@ void DrawBufferOnLine(u16 screenXPosition, u8 screenYPosition, u8* pixelColorBuf
 	rect.w = 1;
 	rect.h = 1;
 
-	for (int x = 0; x < numberOfPixels; ++x, ++rect.x)
+	for (unsigned int x = 0; x < numberOfPixels; ++x, ++rect.x)
 	{
 		if (pixelColorBuffer[x] == 0)
 		{

@@ -109,7 +109,7 @@ u8 CMOS6526CIA1::Peek(u16 address){
 	}else if(address == 0xDC03){
 		return ddrb;
 	}else if(address == 0xDC0D){
-		u8 val = timerACompleted ? 1 : 0;
+		//u8 val = timerACompleted ? 1 : 0;
 
 		timerACompleted = false; // Reset when read.
 

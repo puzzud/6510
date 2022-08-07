@@ -32,7 +32,7 @@ ROM_COPIES = $(subst ../roms,./roms,$(ROMS))
 
 CC = g++
 
-CFLAGS := `sdl2-config --cflags` -g $(CFLAGS)
+CFLAGS := `sdl2-config --cflags` -Wall -g $(CFLAGS)
 LFLAGS := `sdl2-config --libs` -pthread
 
 EXECUTABLE = $(OBJ_DIR)/cmos6510_sdl

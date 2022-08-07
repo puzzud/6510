@@ -31,7 +31,7 @@ u8 CMOS6581::Peek(u16 address){
 	if(address >= 0xD400 && address <= 0xD41C){
 		// TODO: Implement mirroring.
 		if(address == 0xD41B){
-			u8 voice3ControlRegister = mRegs[0xD412-0xD400];
+			//u8 voice3ControlRegister = mRegs[0xD412-0xD400];
 			
 			// NOTE: When oscillator 3 is not set to a noise waveform,
 			// it's not as random.

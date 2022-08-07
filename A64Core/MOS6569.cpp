@@ -403,7 +403,7 @@ void CMOS6569::DrawByteToBuffer(u8 byte, u8* pixelColorBuffer, u8* colorCodes, i
 				}
 			}
 
-			for (int s = 0; s < horizontalScale; ++s, --bufferIndex)
+			for (unsigned int s = 0; s < horizontalScale; ++s, --bufferIndex)
 			{
 				// Plus 1 to account for using 0 for transparency.
 				// Needs to be readjusted on consumption.
