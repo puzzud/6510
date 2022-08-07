@@ -683,6 +683,11 @@ void CMOS6510::F_ADC(u8 addressmode){
 	if( (r_a & 0x80) > 0 ) SETFLAG(FLAG_N);
 	if( (s16)val > 127 || (s16)val < -128 ) SETFLAG(FLAG_V);
 
+	if(mWatcher != NULL){
+		if(mWatcher->CheckReadWatch(address)){
+			mWatcher->ReportReadWatch(address);
+		}
+	}
 }
 
 /*
@@ -702,6 +707,12 @@ void CMOS6510::F_AND(u8 addressmode){ //Mos6502AddressMode
 
 	if(r_a == 0)SETFLAG(FLAG_Z);
 	if( (r_a & 0x80) > 0 ) SETFLAG(FLAG_N);
+
+	if(mWatcher != NULL){
+		if(mWatcher->CheckReadWatch(address)){
+			mWatcher->ReportReadWatch(address);
+		}
+	}
 }
 
 /*
@@ -732,12 +743,6 @@ void CMOS6510::F_ASL(u8 addressmode){
 		r_a = val;		
 	}else{	
 		mMemory->Poke(address, val);
-
-		if(mWatcher != NULL){
-			if(mWatcher->CheckWriteWatch(address)){
-				mWatcher->ReportWriteWatch(address);
-			}
-		}
 	}
 
 	CLRFLAG(FLAG_Z);
@@ -745,6 +750,14 @@ void CMOS6510::F_ASL(u8 addressmode){
 	
 	if(val == 0)SETFLAG(FLAG_Z);
 	if( (val & 0x80) > 0 ) SETFLAG(FLAG_N);
+
+	if(addressmode != ADDRESS_MODE_ACCUMULATOR){
+		if(mWatcher != NULL){
+			if(mWatcher->CheckWriteWatch(address)){
+				mWatcher->ReportWriteWatch(address);
+			}
+		}
+	}
 }
 
 /*
@@ -812,6 +825,12 @@ void CMOS6510::F_BIT(u8 addressmode){
 	}
 	if((m & FLAG_N) > 0){
 		SETFLAG(FLAG_N);
+	}
+
+	if(mWatcher != NULL){
+		if(mWatcher->CheckReadWatch(address)){
+			mWatcher->ReportReadWatch(address);
+		}
 	}
 }
 
@@ -962,6 +981,12 @@ void CMOS6510::F_CMP(u8 addressmode){
 	if(m <= r_a){
 		SETFLAG(FLAG_C);
 	}
+
+	if(mWatcher != NULL){
+		if(mWatcher->CheckReadWatch(address)){
+			mWatcher->ReportReadWatch(address);
+		}
+	}
 }
 
 
@@ -991,6 +1016,12 @@ void CMOS6510::F_CPX(u8 addressmode){
 	if(m <= r_x){
 		SETFLAG(FLAG_C);
 	}
+
+	if(mWatcher != NULL){
+		if(mWatcher->CheckReadWatch(address)){
+			mWatcher->ReportReadWatch(address);
+		}
+	}
 }
 
 
@@ -1019,6 +1050,12 @@ void CMOS6510::F_CPY(u8 addressmode){
 	}
 	if(m <= r_y){
 		SETFLAG(FLAG_C);
+	}
+
+	if(mWatcher != NULL){
+		if(mWatcher->CheckReadWatch(address)){
+			mWatcher->ReportReadWatch(address);
+		}
 	}
 }
 
@@ -1116,6 +1153,12 @@ void CMOS6510::F_EOR(u8 addressmode){
 	if(r_a & 0x80){
 		SETFLAG(FLAG_N);
 	}			 			
+
+	if(mWatcher != NULL){
+		if(mWatcher->CheckReadWatch(address)){
+			mWatcher->ReportReadWatch(address);
+		}
+	}
 }
 
 
@@ -1201,8 +1244,8 @@ void CMOS6510::F_JMP(u8 addressmode){
 	r_pc = address;
 
 	if(mWatcher != NULL){
-		if(mWatcher->CheckJumpWatch(r_pc)){
-			mWatcher->ReportJumpWatch(r_pc, eWatcherJump);
+		if(mWatcher->CheckJumpWatch(address)){
+			mWatcher->ReportJumpWatch(address, eWatcherJump);
 		}
 	}
 }
@@ -1250,6 +1293,11 @@ void CMOS6510::F_LDA(u8 addressmode){
 		SETFLAG(FLAG_Z);		
 	}
 	
+	if(mWatcher != NULL){
+		if(mWatcher->CheckReadWatch(address)){
+			mWatcher->ReportReadWatch(address);
+		}
+	}
 }
 
 
@@ -1275,6 +1323,12 @@ void CMOS6510::F_LDX(u8 addressmode){
 	}
 	if(m == 0){
 		SETFLAG(FLAG_Z);		
+	}
+
+	if(mWatcher != NULL){
+		if(mWatcher->CheckReadWatch(address)){
+			mWatcher->ReportReadWatch(address);
+		}
 	}
 }
 
@@ -1302,6 +1356,12 @@ void CMOS6510::F_LDY(u8 addressmode){
 	}
 	if(m == 0){
 		SETFLAG(FLAG_Z);		
+	}
+
+	if(mWatcher != NULL){
+		if(mWatcher->CheckWriteWatch(address)){
+			mWatcher->ReportWriteWatch(address);
+		}
 	}
 }
 
@@ -1386,6 +1446,12 @@ void CMOS6510::F_ORA(u8 addressmode){
 	
 	
 //	mMemory->Poke(address, m);
+
+	if(mWatcher != NULL){
+		if(mWatcher->CheckReadWatch(address)){
+			mWatcher->ReportReadWatch(address);
+		}
+	}
 }
 
 /*
@@ -1530,6 +1596,12 @@ void CMOS6510::F_ROR(u8 addressmode){
 		r_a = m;	
 	}else{
 		mMemory->Poke(address, m);
+
+		if(mWatcher != NULL){
+			if(mWatcher->CheckWriteWatch(address)){
+				mWatcher->ReportWriteWatch(address);
+			}
+		}
 	}
 }
 
@@ -1600,6 +1672,12 @@ void CMOS6510::F_SBC(u8 addressmode){
 	}
 	if(acalc < -128 || acalc > 127){
 		SETFLAG(FLAG_V);
+	}
+
+	if(mWatcher != NULL){
+		if(mWatcher->CheckReadWatch(address)){
+			mWatcher->ReportReadWatch(address);
+		}
 	}
 }
 
