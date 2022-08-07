@@ -146,6 +146,7 @@ const MOS6502Cycles cycleMatrix[] =
 CMOS6510::CMOS6510(BKE_MUTEX mutex){
 
 	mMemory = mBus = CBus::GetInstance();
+	mHiresTime = NULL;
 	
 	//Init the registers
 	r_pc	= mMemory->Peek16(0xFFFC);

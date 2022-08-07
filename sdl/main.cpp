@@ -65,7 +65,6 @@ void DrawByte(u8 byte, u8* colorCodes, u16 screenXPosition, u8 screenYPosition, 
 void DrawBufferOnLine(u16 screenXPosition, u8 screenYPosition, u8* pixelColorBuffer, unsigned int numberOfPixels);
 void DrawScreenLine(unsigned int lineNumber);
 
-class HiresTimeImpl;
 class SDLScreen;
 
 CBM64Main* cbm64 = NULL;
@@ -97,36 +96,6 @@ std::map<SDL_Keycode, CiaKeyboardMatrixPair> SdlKeyCodeToCiaKeyMatrixMap {
 	{SDLK_ESCAPE, {7, 7}}, {SDLK_q, {7, 6}}, {SDLK_LALT, {7, 5}}, {SDLK_SPACE, {7, 4}}, {SDLK_2, {7, 3}}, {SDLK_LCTRL, {7, 2}}, {SDLK_BACKQUOTE, {7, 1}}, {SDLK_1, {7, 0}}
 };
 
-uint64_t now() {
-    uint64_t now = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
-    return now;
-}
-
-
-class HiresTimeImpl : public CHiresTime {
-    public:
-        HiresTimeImpl(){
-            start_ = std::chrono::high_resolution_clock::now();
-        }
-    public:
-        double GetMicroseconds() {
-            auto t2 = std::chrono::high_resolution_clock::now();
-
-            auto int_ms = std::chrono::duration_cast<std::chrono::milliseconds>(t2 - start_);
-            std::chrono::duration<long, std::micro> int_usec = int_ms;
-
-            return int_usec.count();
-        }
-
-        int GetMicrosecondsLo() {
-            static timeval t;
-            gettimeofday(&t, NULL);	
-            return ((t.tv_sec * 1000000) + t.tv_usec);
-        }
-    private:
-        std::chrono::time_point<std::chrono::high_resolution_clock> start_;
-};
-
 
 class SDLScreen : public CVICHWScreen {
     public:
@@ -152,7 +121,7 @@ class SDLScreen : public CVICHWScreen {
 };
 
 
-void runloop() {
+void Process(void){
 	//1023000 // NTSC
 	static const int cyclesInFrame = NTSC_FIELD_CYCLES_PER_LINE * NTSC_FIELD_LINE_HEIGHT;
 
@@ -190,10 +159,6 @@ int main(int argc, char* argv[]) {
     cbm64 = new CBM64Main();
     cbm64->Init();
 
-    //Set the hires time callbacks
-    HiresTimeImpl hiresTime;
-    cbm64->SetHiresTimeProvider(&hiresTime);
-
     //Subscribe Host hardware related VIC Code
     SDLScreen sdlScreen;
     cbm64->GetVic()->RegisterHWScreen(&sdlScreen);
@@ -224,11 +189,6 @@ int main(int argc, char* argv[]) {
 
 	return 0;
 #endif
-}
-
-void Process(void)
-{
-    runloop();
 }
 
 inline void MainLoop(void)
