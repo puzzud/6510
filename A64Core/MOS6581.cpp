@@ -14,7 +14,7 @@
 #include <sys/time.h>
 
 CMOS6581::CMOS6581(){
-	memset(mRegs, 0, SID_NUMBER_OF_REGISTERS);
+	memset(mRegs, 0, sizeof(mRegs));
 
 	srand(time(NULL));
 

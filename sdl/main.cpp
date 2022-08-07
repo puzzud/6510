@@ -532,7 +532,7 @@ void DrawScreen()
 void DrawByte(u8 byte, u8* colorCodes, u16 screenXPosition, u8 screenYPosition, int mode, bool multiColor, unsigned int horizontalScale)
 {
 	static u8 pixelColorBuffer[16];  // 16 bytes in case of horizontal scaling.
-	memset(pixelColorBuffer, 0, 16);
+	memset(pixelColorBuffer, 0, sizeof(pixelColorBuffer));
 	cbm64->GetVic()->DrawByteToBuffer(byte, pixelColorBuffer, colorCodes, mode, multiColor, horizontalScale);
 	DrawBufferOnLine(screenXPosition, screenYPosition, pixelColorBuffer, 8 * horizontalScale);
 }
@@ -592,7 +592,7 @@ void DrawScreenLine(unsigned int lineNumber)
 
 	// Draw background.
 	static u8 pixelColorBuffer[HARDWARE_SPRITE_PIXEL_BUFFER_SIZE];
-	memset(pixelColorBuffer, 0, HARDWARE_SPRITE_PIXEL_BUFFER_SIZE);
+	memset(pixelColorBuffer, 0, sizeof(pixelColorBuffer));
 
 	// HARDWARE_SPRITE_TO_SCREEN_X_OFFSET accounts for
 	// border and HBlank to match with screen background.
@@ -626,7 +626,7 @@ void DrawScreenLine(unsigned int lineNumber)
 
 				// 48 bytes in case of horizontal scaling.
 				static u8 pixelColorBuffer[HARDWARE_SPRITE_WIDTH * 2];
-				memset(pixelColorBuffer, 0, HARDWARE_SPRITE_WIDTH * 2);
+				memset(pixelColorBuffer, 0, sizeof(pixelColorBuffer));
 				
 				vic->DrawSpriteRowToBuffer(spriteIndex, spriteRowOffset, pixelColorBuffer);
 				

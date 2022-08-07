@@ -23,8 +23,8 @@ static char CMOS6569TextMap[128] =
                       'x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x' };
 
 CMOS6569::CMOS6569(){
-	memset(mRegs, 0, 47);
-	memset(mColorRam, 0, (0xDBFF-0xD800));
+	memset(mRegs, 0, sizeof(mRegs));
+	memset(mColorRam, 0, sizeof(mColorRam));
 
 	irq = false;
 
@@ -243,10 +243,10 @@ bool CMOS6569::IsSpriteMultiColor(unsigned int spriteIndex){
 
 
 void CMOS6569::TestSpriteCollision(){
-	memset(backgroundFieldLinePixelColorBuffer, 0, HARDWARE_SPRITE_PIXEL_BUFFER_SIZE);
+	memset(backgroundFieldLinePixelColorBuffer, 0, sizeof(backgroundFieldLinePixelColorBuffer));
 
 	memset(spriteFieldLinePixelColorBuffers, 0,
-		NUMBER_OF_HARDWARE_SPRITES * HARDWARE_SPRITE_PIXEL_BUFFER_SIZE);
+		sizeof(spriteFieldLinePixelColorBuffers));
 
 	// HARDWARE_SPRITE_TO_SCREEN_X_OFFSET accounts for
 	// border and HBlank to match with screen background.

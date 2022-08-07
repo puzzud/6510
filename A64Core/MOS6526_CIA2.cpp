@@ -14,8 +14,8 @@
 CMOS6526CIA2::CMOS6526CIA2(BKE_MUTEX mutex){
     mMutex = mutex;
 
-	memset(mRegs, 0xFF, 0xDD0F-0xDD00); // 0xFF is a default value that will at least set VIC bank 0.
-
+	memset(mRegs, 0xFF, sizeof(mRegs)); // 0xFF is a default value that will at least set VIC bank 0.
+	
 	mBus = CBus::GetInstance();
 	mBus->Register(eBusCia2,this, 0xDD00, 0xDDFF);
 }
