@@ -51,18 +51,47 @@
 #define HARDWARE_SPRITE_TO_SCREEN_Y_OFFSET   50
 
 
+typedef enum
+{
+	COLOR_BLACK,
+	COLOR_WHITE,
+	COLOR_RED,
+	COLOR_CYAN,
+	COLOR_PURPLE,
+	COLOR_GREEN,
+	COLOR_BLUE,
+	COLOR_YELLOW,
+	COLOR_ORANGE,
+	COLOR_BROWN,
+	COLOR_LIGHT_RED,
+	COLOR_GREY_1,
+	COLOR_GREY_2,
+	COLOR_LIGHT_GREEN,
+	COLOR_LIGHT_BLUE,
+	COLOR_GREY_3,
+
+	NUMBER_OF_COLORS
+} ColorCode;
+
+
 typedef enum _eByteRenderMode{
 	eByteRenderModeCharacter,
 	eByteRenderModeSprite
 }eByteRenderMode;
 
+class CMOS6569;
 
 class CVICHWScreen{
 public:
+		CVICHWScreen(){
+			vic = NULL;
+		}
+		void SetVic(CMOS6569* vic){this->vic = vic;}
 		virtual void OnRasterLineCompleted(unsigned int lineNumber){};
 		virtual void DrawChar(u16 address, u8 c)  = 0;
 		virtual void DrawChars(u8* memory) = 0;
 protected:
+		CMOS6569* vic;
 };
 
 

@@ -327,7 +327,17 @@ void CMOS6569::TestSpriteCollision(){
 
 
 void CMOS6569::RegisterHWScreen(CVICHWScreen* screen){
+	// Detach previous one from VIC.
+	if (mRenderer != NULL && mRenderer != screen){
+		mRenderer->SetVic(NULL);
+	}
+	
 	mRenderer = screen;
+
+	// Attach new one to VIC.
+	if (screen != NULL){
+		screen->SetVic(this);
+	}
 }
 
 
