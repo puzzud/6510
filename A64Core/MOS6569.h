@@ -50,6 +50,13 @@
 #define HARDWARE_SPRITE_TO_SCREEN_X_OFFSET   24
 #define HARDWARE_SPRITE_TO_SCREEN_Y_OFFSET   50
 
+
+typedef enum _eByteRenderMode{
+	eByteRenderModeCharacter,
+	eByteRenderModeSprite
+}eByteRenderMode;
+
+
 class CVICHWScreen{
 public:
 		virtual void OnRasterLineCompleted(unsigned int lineNumber){};
@@ -131,7 +138,7 @@ class CMOS6569 : public CDevice{
 		void RegisterHWScreen(CVICHWScreen* screen);
 		void HWNeedsRedraw();
 
-		void DrawByteToBuffer(u8 byte, u8* pixelColorBuffer, u8* colorCodes, int mode, bool multiColor, unsigned int horizontalScale = 1);
+		void DrawByteToBuffer(u8 byte, u8* pixelColorBuffer, u8* colorCodes, eByteRenderMode mode, bool multiColor, unsigned int horizontalScale = 1);
 		void DrawBackgroundRowToBuffer(unsigned int fieldLineNumber, u8* pixelColorBuffer);
 		void DrawSpriteRowToBuffer(unsigned int spriteIndex, unsigned int rowIndex, u8* pixelColorBuffer);
 };

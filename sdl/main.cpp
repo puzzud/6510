@@ -61,7 +61,7 @@ void OnInputTextInputEvent(SDL_Event* event);
 void InitializeColors(void);
 void SetColorValuesFromInt(SDL_Color* color, unsigned int value);
 void DrawScreen();
-void DrawByte(u8 byte, u8* colorCodes, u16 screenXPosition, u8 screenYPosition, int mode, bool multiColor = false, unsigned int horizontalScale = 1);
+void DrawByte(u8 byte, u8* colorCodes, u16 screenXPosition, u8 screenYPosition, eByteRenderMode mode, bool multiColor = false, unsigned int horizontalScale = 1);
 void DrawBufferOnLine(u16 screenXPosition, u8 screenYPosition, u8* pixelColorBuffer, unsigned int numberOfPixels);
 void DrawScreenLine(unsigned int lineNumber);
 
@@ -479,7 +479,7 @@ void DrawScreen()
 // map to color values respectively.
 //  - 0: Character
 //  - 1: Sprite
-void DrawByte(u8 byte, u8* colorCodes, u16 screenXPosition, u8 screenYPosition, int mode, bool multiColor, unsigned int horizontalScale)
+void DrawByte(u8 byte, u8* colorCodes, u16 screenXPosition, u8 screenYPosition, eByteRenderMode mode, bool multiColor, unsigned int horizontalScale)
 {
 	static u8 pixelColorBuffer[16];  // 16 bytes in case of horizontal scaling.
 	memset(pixelColorBuffer, 0, sizeof(pixelColorBuffer));
