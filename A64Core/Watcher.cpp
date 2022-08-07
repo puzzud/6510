@@ -18,6 +18,19 @@ CWatcher::CWatcher(){
 CWatcher::~CWatcher(){
 }
 
+void CWatcher::SetAddressWatch(u16 address){
+    mAddressWatches[address] = 1;
+}
+
+void CWatcher::ClearAddressWatch(u16 address){
+    mAddressWatches[address] = 0;
+}
+
+bool CWatcher::CheckAddressWatch(u16 address){
+    return mAddressWatches[address] != 0;
+}
+
+
 void CWatcher::SetJumpWatch(u16 address){
     mJumpWatches[address] = 1;
 }
