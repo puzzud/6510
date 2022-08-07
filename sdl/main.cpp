@@ -99,6 +99,22 @@ class CustomWatcher : public CWatcher
     public:
 	protected:
 	
+	virtual void ReportAddressWatch(u16 address)
+	{
+		if (address == 0x972B) // GameInitialize
+		{
+			cout << "GameInitialize" << endl;
+			return;
+		}
+		else if (address == 0x9771) //DoRound
+		{
+			cout << "DoRound" << endl;
+			return;
+		}
+
+		cout << "Watcher Address: " << std::hex << int(address) << std::dec << endl;
+	};
+
 	virtual void ReportJumpWatch(u16 address, eWatcherJumpType jumpType)
 	{
 		cout << "Watcher Jump: " << std::hex << int(address) << std::dec << endl;
@@ -111,6 +127,9 @@ class CustomWatcher : public CWatcher
 				cbm64->GetCpu()->SetPC(0x4000);
 				
 				ClearJumpWatch(0x655B);
+
+				SetAddressWatch(0x972B);
+				SetAddressWatch(0x9771);
 
 				SetReadWatch(0xE509+0);
 				SetReadWatch(0xE509+1);
