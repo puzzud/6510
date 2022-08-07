@@ -101,7 +101,7 @@ class CustomWatcher : public CWatcher
 	
 	virtual void ReportJumpWatch(u16 address, eWatcherJumpType jumpType)
 	{
-		cout << "Jump: " << std::hex << int(address) << std::dec << endl;
+		cout << "Watcher Jump: " << std::hex << int(address) << std::dec << endl;
 
 		if (address == 0x655B)
 		{
@@ -112,6 +112,12 @@ class CustomWatcher : public CWatcher
 				
 				ClearJumpWatch(0x655B);
 
+				SetReadWatch(0xE509+0);
+				SetReadWatch(0xE509+1);
+				SetReadWatch(0xE509+2);
+				SetReadWatch(0xE509+3);
+
+				SetWriteWatch(0x48);
 				SetWriteWatch(0xDF12);
 			}
 		}
@@ -119,21 +125,39 @@ class CustomWatcher : public CWatcher
 
 	virtual void ReportReadWatch(u16 address)
 	{
-		cout << "Read: " << std::hex << int(address) << std::dec << endl;
+		if (address >= 0xE509 && address < 0xE509+4)
+		{
+			auto bus = CBus::GetInstance();
+			u8 planeteerSpecies = bus->Peek(address);
+
+			cout << "PlaneteerSpecies Read: " << int(planeteerSpecies) << endl;
+
+			return;
+		}
+
+		cout << "Watcher Read: " << std::hex << int(address) << std::dec << endl;
 	}
 
 	virtual void ReportWriteWatch(u16 address)
 	{
-		if (address == 0xDF12)
+		if (address == 0x48)
+		{
+			auto bus = CBus::GetInstance();
+			u8 roundNumber = bus->Peek(address);
+
+			cout << "RoundNumber" << ": " << int(roundNumber) << endl;
+
+			return;
+		}else if (address == 0xDF12)
 		{
 			cout  << std::hex;
-			cout << "Write: " << int(address);
-			cout << " at PC: " << int(cbm64->GetCpu()->GetPC());
-			cout << std::dec << endl;
+			cout << "Watcher Write: " << int(address);
+			cout << " before PC: " << int(cbm64->GetCpu()->GetPC()) << endl;
+			cout << std::dec;
 			return;
 		}
 
-		cout << "Write: " << std::hex << int(address) << std::dec << endl;
+		cout << "Watcher Write: " << std::hex << int(address) << std::dec << endl;
 	}
 
     private:
