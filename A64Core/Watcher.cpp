@@ -10,9 +10,10 @@
 #include "Watcher.h"
 
 CWatcher::CWatcher(){
-    memset(mJumpWatches, 0, sizeof(unsigned int) * 0xFFFF);
-    memset(mReadWatches, 0, sizeof(unsigned int) * 0xFFFF);
-    memset(mWriteWatches, 0, sizeof(unsigned int) * 0xFFFF);
+    memset(mAddressWatches, 0, 0x10000);
+    memset(mJumpWatches, 0, 0x10000);
+    memset(mReadWatches, 0, 0x10000);
+    memset(mWriteWatches, 0, 0x10000);
 }
 
 CWatcher::~CWatcher(){
@@ -29,7 +30,6 @@ void CWatcher::ClearAddressWatch(u16 address){
 bool CWatcher::CheckAddressWatch(u16 address){
     return mAddressWatches[address] != 0;
 }
-
 
 void CWatcher::SetJumpWatch(u16 address){
     mJumpWatches[address] = 1;
