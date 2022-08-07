@@ -31,7 +31,7 @@ CMOS6526CIA1::CMOS6526CIA1(BKE_MUTEX mutex){
 	mBus->Register(eBusCia1,this, 0xDC00, 0xDCFF);
 
 	memset(keyboardMatrix, 0xFF, 8);
-	memset(joystickStates, 0XFF, 8);
+	memset(joystickStates, 0XFF, 2);
 
 	timerAEnabled = false;
 	timerACompleted = false;
