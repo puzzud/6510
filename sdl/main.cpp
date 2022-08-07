@@ -59,10 +59,9 @@ void DrawBufferOnLine(u16 screenXPosition, u8 screenYPosition, u8* pixelColorBuf
 void DrawScreenLine(unsigned int lineNumber);
 
 class HiresTimeImpl;
-class EMCScreen;
+class SDLScreen;
 
 CBM64Main* cbm64 = NULL;
-EMCScreen* emcScreen_ = NULL;
 
 SDL_Window* Window;
 SDL_Renderer* Renderer;
@@ -122,15 +121,10 @@ class HiresTimeImpl : public CHiresTime {
 };
 
 
-class EMCScreen : public CVICHWScreen {
+class SDLScreen : public CVICHWScreen {
     public:
-        EMCScreen() {
-			// TODO: Maybe best to just pull this data directly from VIC,
-			// instead of duplicating in HWScreen.
-			SetBorderColor(0);
-			SetBackgroundColor(0);
-        }
-        ~EMCScreen(){}
+        SDLScreen(){}
+        ~SDLScreen(){}
     public:
         void DrawChar(u16 address, u8 c){}
         void DrawChars(u8* memory){}
@@ -142,7 +136,6 @@ class EMCScreen : public CVICHWScreen {
 				SDL_RenderPresent(Renderer);
 				
 				// Clear render display (avoids artifacts in "border" in SDL window when resized).
-				//SDL_Color* color = &Colors[emcScreen_->GetBorderColor()];
 				SDL_Color* color = &Colors[COLOR_BLACK];
 
 				SDL_SetRenderDrawColor(Renderer, color->r, color->g, color->b, 0xff);
@@ -195,8 +188,8 @@ int main(int argc, char* argv[]) {
     cbm64->SetHiresTimeProvider(&hiresTime);
 
     //Subscribe Host hardware related VIC Code
-    emcScreen_ = new EMCScreen();
-    cbm64->GetVic()->RegisterHWScreen(emcScreen_);
+    SDLScreen sdlScreen;
+    cbm64->GetVic()->RegisterHWScreen(&sdlScreen);
 
 	if (argc > 1)
 	{
@@ -214,11 +207,11 @@ int main(int argc, char* argv[]) {
 #else
 	MainLoop();
 
-	std::cout << "ended..." << std::endl;
-
     SDL_DestroyWindow(Window);
 	SDL_DestroyRenderer(Renderer);
     SDL_Quit();
+
+	std::cout << "ended..." << std::endl;
 
 	return 0;
 #endif
@@ -584,7 +577,7 @@ void DrawScreenLine(unsigned int lineNumber)
 	rect.x = 0;
 	rect.w = SCREEN_WIDTH;
 
-	SDL_Color* backgroundColor = &Colors[emcScreen_->GetBackgroundColor() % 16];
+	SDL_Color* backgroundColor = &Colors[vic->Peek(0xD021) % 16];
 	SDL_SetRenderDrawColor(Renderer, backgroundColor->r, backgroundColor->g, backgroundColor->b, backgroundColor->a);
 	SDL_RenderFillRect(Renderer, &rect);
 

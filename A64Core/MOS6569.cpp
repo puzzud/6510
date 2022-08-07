@@ -131,10 +131,6 @@ int CMOS6569::Poke(u16 address, u8 val){
 			return 0; // Can't poke into this register.
 		}else if(address == 0xD01F){
 			return 0; // Can't poke into this register.
-		}else if (address == 0xD020){
-			mRenderer->SetBorderColor(val);
-		}else if (address == 0xD021){
-			mRenderer->SetBackgroundColor(val);
 		}
 
 		mRegs[address - 0xD000] = val;
