@@ -45,6 +45,13 @@ typedef enum
 	NUMBER_OF_COLORS
 } ColorCode;
 
+typedef enum _eKeyboardMode{
+	eKeyboardModeSymbolic,
+	eKeyboardModeJoystick1,
+	eKeyboardModeJoystick2,
+	eKeyboardModeBASIC
+}eKeyboardMode;
+
 void Process(void);
 void MainLoop(void);
 void MainLoopIteration(void);
@@ -69,7 +76,7 @@ SDL_Point RenderScale;
 SDL_Color Colors[NUMBER_OF_COLORS];
 SDL_Texture* CharacterSetTexture;
 
-unsigned int keysetMode = 0;
+eKeyboardMode keysetMode = eKeyboardModeBASIC;
 
 bool _run = true;
 uint64_t remainingCycles = 0;
@@ -193,7 +200,9 @@ int main(int argc, char* argv[]) {
 
 	if (argc > 1)
 	{
-		cbm64->LoadAppWithoutBasic(argv[1]);
+		if (cbm64->LoadAppWithoutBasic(argv[1]) == 0){
+			keysetMode = eKeyboardModeSymbolic;
+		}
 	}
 
 	if (argc > 2)
@@ -317,149 +326,139 @@ void OnInputEvent(SDL_Event* event)
 
 void OnInputKeyEvent(SDL_Event* event, unsigned int isDown)
 {
-	/*
-	switch (event->type)
-	{
-		case SDL_KEYDOWN:
-		{
-			if (event->key.repeat == 0)
-			{
-                int keyScanCode = event->key.keysym.scancode;
-
-                //int keySymbol = event->key.keysym.sym;
-                //cout << "Typed: " << int(keyScanCode) << " : " << char(keySymbol) << " (" << int(keySymbol) << ")" << endl;
-
-                //https://sta.c64.org/cbm64pet.html
-                
-                int keyStroke = -1;
-
-                if (keyScanCode == SDL_SCANCODE_RETURN)
-                {
-                    keyStroke = 13;
-                }
-                else if (keyScanCode == SDL_SCANCODE_ESCAPE)
-                {
-                    keyStroke = 3;
-                }
-                else if (keyScanCode == SDL_SCANCODE_UP)
-                {
-                    keyStroke = 145;
-                }
-                else if (keyScanCode == SDL_SCANCODE_DOWN)
-                {
-                    keyStroke = 17;
-                }
-                else if (keyScanCode == SDL_SCANCODE_LEFT)
-                {
-                    keyStroke = 157;
-                }
-                else if (keyScanCode == SDL_SCANCODE_RIGHT)
-                {
-                    keyStroke = 29;
-                }
-                else if (keyScanCode == SDL_SCANCODE_BACKSPACE)
-                {
-                    keyStroke = 20;
-                }
-
-                if (keyStroke > -1)
-                {
-                    cbm64->GetCia1()->AddKeyStroke(char(keyStroke));
-                }
-			}
-
-			break;
-		}
-
-		case SDL_KEYUP:
-		{
-			if (event->key.repeat == 0)
-			{
-
-			}
-
-			break;
-		}
-	}
-	*/
-
 	switch (event->type)
 	{
 		case SDL_KEYDOWN:
 		case SDL_KEYUP:
 		{
-			if (event->key.repeat == 0)
+			if (event->key.repeat > 0)
 			{
-				auto keyCode = event->key.keysym.sym;
+				return;
+			}
+			
+			auto keyCode = event->key.keysym.sym;
 
-				if (event->type == SDL_KEYDOWN && keyCode == SDLK_F9){
-					// Increment keyset mode.
-					keysetMode = (keysetMode + 1) % 3;
-					cout << "Keyset Mode: " << keysetMode << endl;
+			if (event->type == SDL_KEYDOWN && keyCode == SDLK_F9){
+				// Increment keyset mode.
+				// NOTE: Keyset mode 3 (expecting BASIC)
+				// is skipped in the cycle,
+				// but can be the default.
+				if (keysetMode == eKeyboardModeBASIC){
+					keysetMode = eKeyboardModeSymbolic;
+				}else{
+					keysetMode = (eKeyboardMode)((keysetMode + 1) % 3);
+				}
+
+				cout << "Keyset Mode: " << keysetMode << endl;
+				return;
+			}
+
+			if (keysetMode == eKeyboardModeBASIC){
+				if (event->type != SDL_KEYDOWN){
 					return;
 				}
+				
+				int keyScanCode = event->key.keysym.scancode;
 
-				if (keysetMode == 1 || keysetMode == 2)
+				//int keySymbol = event->key.keysym.sym;
+				//cout << "Typed: " << int(keyScanCode) << " : " << char(keySymbol) << " (" << int(keySymbol) << ")" << endl;
+
+				//https://sta.c64.org/cbm64pet.html
+				
+				int keyStroke = -1;
+
+				if (keyScanCode == SDL_SCANCODE_RETURN)
 				{
-					// Keyboard controls joystick 1 or 2.
-					int buttonId = -1;
-					if (keyCode == SDLK_UP)
-					{
-						buttonId = 0;
-					}
-					else if (keyCode == SDLK_DOWN)
-					{
-						buttonId = 1;
-					}
-					else if (keyCode == SDLK_LEFT)
-					{
-						buttonId = 2;
-					}
-					else if (keyCode == SDLK_RIGHT)
-					{
-						buttonId = 3;
-					}
-					else if (keyCode == SDLK_SPACE)
-					{
-						buttonId = 4;
-					}
-
-					if (buttonId > -1)
-					{
-						cbm64->GetCia1()->SetJoystickState(keysetMode - 1, buttonId, event->type == SDL_KEYDOWN);
-						return;
-					}
+					keyStroke = 13;
+				}
+				else if (keyScanCode == SDL_SCANCODE_ESCAPE)
+				{
+					keyStroke = 3;
+				}
+				else if (keyScanCode == SDL_SCANCODE_UP)
+				{
+					keyStroke = 145;
+				}
+				else if (keyScanCode == SDL_SCANCODE_DOWN)
+				{
+					keyStroke = 17;
+				}
+				else if (keyScanCode == SDL_SCANCODE_LEFT)
+				{
+					keyStroke = 157;
+				}
+				else if (keyScanCode == SDL_SCANCODE_RIGHT)
+				{
+					keyStroke = 29;
+				}
+				else if (keyScanCode == SDL_SCANCODE_BACKSPACE)
+				{
+					keyStroke = 20;
 				}
 
-				// Keyboard is keyboard (keysetMode 0 and fall through behavior).
-				auto it = SdlKeyCodeToCiaKeyMatrixMap.find(keyCode);
-				if (it != SdlKeyCodeToCiaKeyMatrixMap.cend())
+				if (keyStroke > -1)
 				{
-					auto ciaKeyboardMatrixPair = &it->second;
-					cbm64->GetCia1()->SetKeyState(ciaKeyboardMatrixPair->row, ciaKeyboardMatrixPair->column, event->type == SDL_KEYDOWN);
+					cbm64->GetCia1()->AddKeyStroke(char(keyStroke));
+				}
+
+				return;
+			}else if (keysetMode == eKeyboardModeJoystick1 ||
+				keysetMode == eKeyboardModeJoystick2){
+				int buttonId = -1;
+				if (keyCode == SDLK_UP)
+				{
+					buttonId = 0;
+				}
+				else if (keyCode == SDLK_DOWN)
+				{
+					buttonId = 1;
+				}
+				else if (keyCode == SDLK_LEFT)
+				{
+					buttonId = 2;
+				}
+				else if (keyCode == SDLK_RIGHT)
+				{
+					buttonId = 3;
+				}
+				else if (keyCode == SDLK_SPACE)
+				{
+					buttonId = 4;
+				}
+
+				if (buttonId > -1)
+				{
+					cbm64->GetCia1()->SetJoystickState(keysetMode - 1, buttonId, event->type == SDL_KEYDOWN);
+					return;
 				}
 			}
 
-			break;
+			// Keyboard is keyboard (keysetMode 0, keysetModes 1 & 2 fall through behavior).
+			auto it = SdlKeyCodeToCiaKeyMatrixMap.find(keyCode);
+			if (it != SdlKeyCodeToCiaKeyMatrixMap.cend())
+			{
+				auto ciaKeyboardMatrixPair = &it->second;
+				cbm64->GetCia1()->SetKeyState(ciaKeyboardMatrixPair->row, ciaKeyboardMatrixPair->column, event->type == SDL_KEYDOWN);
+			}
 		}
+
+		break;
 	}
 }
 
 void OnInputTextInputEvent(SDL_Event* event)
 {
-	/*
-    char keySymbol = event->text.text[0];
-    //cout << "Text Input: " << char(keySymbol) << endl;
+	if (keysetMode == 3){
+		char keySymbol = event->text.text[0];
+		//cout << "Text Input: " << char(keySymbol) << endl;
 
-    char keyStroke = keySymbol;
+		if (keySymbol >= 'a' && keySymbol <= 'z')
+		{
+			keySymbol = keySymbol + 'A' - 'a';
+		}
 
-    if (keySymbol >= 'a' && keySymbol <= 'z')
-    {
-        keyStroke = keySymbol + 'A' - 'a';
-    }
-
-    //cbm64->GetCia1()->AddKeyStroke(char(keyStroke));
-	*/
+		cbm64->GetCia1()->AddKeyStroke(char(keySymbol));
+	}
 }
 
 void InitializeColors(void)
