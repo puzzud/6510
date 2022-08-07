@@ -20,6 +20,8 @@ typedef enum _eWatcherJumpType{
 
 class CWatcher{
 private:
+	// NOTE: Address watches limited to instruction fetch addresses.
+	unsigned int mAddressWatches[0xFFFF];
 	unsigned int mJumpWatches[0xFFFF];
 	unsigned int mReadWatches[0xFFFF];
 	unsigned int mWriteWatches[0xFFFF];
@@ -27,6 +29,11 @@ protected:
 public:
 	CWatcher();
 	~CWatcher();
+
+	void SetAddressWatch(u16 address);
+	void ClearAddressWatch(u16 address);
+	bool CheckAddressWatch(u16 address);
+	virtual void ReportAddressWatch(u16 address) = 0;
 
 	void SetJumpWatch(u16 address);
 	void ClearJumpWatch(u16 address);
