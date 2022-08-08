@@ -14,6 +14,21 @@ if(SDL)
     add_definitions(-DSDL)
 endif()
 
+OPTION(EMSCRIPTEN "Build web version" OFF)
+if(EMSCRIPTEN)
+    add_definitions(-D__EMSCRIPTEN__)
+endif()
+
+if(EMSCRIPTEN)
+    set(CMAKE_C_COMPILER "emcc")
+    set(CMAKE_CXX_COMPILER "emcc")
+    set(USE_FLAGS "-s USE_SDL=2")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${USE_FLAGS}")
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${USE_FLAGS}")
+    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${USE_FLAGS}")
+    set(CMAKE_EXECUTABLE_SUFFIX ".html")
+endif(EMSCRIPTEN)
+
 project(cmos6510)
 
 set(CMAKE_CXX_STANDARD 17)
@@ -112,6 +127,11 @@ endif(SDL)
 #target_compile_options(
 #    ${PROJECT_NAME}
 #    PUBLIC "-pthread"
+#)
+
+#target_link_options(
+#    ${PROJECT_NAME}
+#    PUBLIC "--preload-file roms"
 #)
 
 include_directories(${PROJECT_INCLUDE_DIRECTORIES})
