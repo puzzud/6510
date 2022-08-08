@@ -155,6 +155,27 @@ bool CMOS6526CIA1::GetIRQ(){
 	return irq;
 }
 
+
+CCIA1HWController* CMOS6526CIA1::GetHWController(){
+	return mController;
+}
+
+
+void CMOS6526CIA1::RegisterHWController(CCIA1HWController* controller){
+	// Detach previous one from CIA1.
+	if (mController != NULL && mController != controller){
+		mController->SetCia1(NULL);
+	}
+	
+	mController = controller;
+
+	// Attach new one to CIA1.
+	if (controller != NULL){
+		controller->SetCia1(this);
+	}
+}
+
+
 int CMOS6526CIA1::AddKeyStroke(char c){
 	BKE_MUTEX_LOCK(mMutex);
 	

@@ -17,7 +17,8 @@ CORE_CPP = ../A64Core/MOS6510.cpp \
     ../A64Core/Util.cpp 
 
 MAIN_CPP = ../sdl/SDLHWScreen.cpp \
-    ../sdl/SDLMain.cpp \
+    ../sdl/SDLHWController.cpp \
+    ../sdl/SDLMainLoop.cpp \
     ../sdl/main.cpp
 
 SRCS = $(CORE_CPP) $(MAIN_CPP)
