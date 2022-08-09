@@ -31,8 +31,9 @@ void SetInitialGameDifficulty(u8 gameDifficulty);
 void SetPlayerInputType(unsigned int playerIndex, u8 playerInputType);
 void SetPlayerColor(unsigned int playerIndex, u8 playerColor);
 void SetPlayerSpecies(unsigned int playerIndex, u8 playerSpecies);
-void SetFakeIntroUserSettings();
 
+void SetFakeIntroUserSettings();
+void ApplySettingsAndJumpToDataCopy();
 
 class CustomWatcher;
 
@@ -61,26 +62,7 @@ class CustomWatcher : public CWatcher
 		else if (address == 0x55B3) // J_55B3 initial game initialization over
 		//else if (address == 0x547F)
 		{
-			SetFakeIntroUserSettings();
-
-			// Need to change some values to those
-			// right before loading (these setup during m1 confirmation screen?).
-			auto vic = cbm64->GetVic();
-			vic->Poke(0xD015, 0x00); // Disable all sprites.
-			vic->Poke(0xD01C, 0x00); // Make all sprites single color.
-
-			auto vicMemoryControl = vic->Peek(0xD018); // Set up VIC character memory.
-			vicMemoryControl &= 0xf1;
-			vicMemoryControl |= 10;
-			vic->Poke(0xD018, vicMemoryControl);
-
-			//DrawConfirmationScreen1:            ;       [6290]
-			//cbm64->GetCpu()->SetPC(0x6290);
-
-			// Part where various data is processed and copied
-			// right before loading and proceeding to M.
-			//CopyPlayerSpeciesGraphics:            ;       [6427]
-			cbm64->GetCpu()->SetPC(0x6427);
+			ApplySettingsAndJumpToDataCopy();
 
 			return;
 		}
@@ -194,9 +176,7 @@ int main(int argc, char* argv[]) {
 	else
 	{
 		cbm64->GetCpu()->SetPC(0x4000);
-
 		watcher->SetAddressWatch(0x55B3); // J_55B3 // Address just enough to run initial setup.
-		//watcher->SetAddressWatch(0x547F);
 	}
 
 	MainLoop();
@@ -291,4 +271,29 @@ void SetFakeIntroUserSettings()
 	SetPlayerColor(1, 6);
 	SetPlayerColor(2, 8);
 	SetPlayerColor(3, 4);
+}
+
+
+void ApplySettingsAndJumpToDataCopy()
+{
+	SetFakeIntroUserSettings();
+
+	// Need to change some values to those
+	// right before loading (these setup during m1 confirmation screen?).
+	auto vic = cbm64->GetVic();
+	vic->Poke(0xD015, 0x00); // Disable all sprites.
+	vic->Poke(0xD01C, 0x00); // Make all sprites single color.
+
+	auto vicMemoryControl = vic->Peek(0xD018); // Set up VIC character memory.
+	vicMemoryControl &= 0xf1;
+	vicMemoryControl |= 10;
+	vic->Poke(0xD018, vicMemoryControl);
+
+	//DrawConfirmationScreen1:            ;       [6290]
+	//cbm64->GetCpu()->SetPC(0x6290);
+
+	// Part where various data is processed and copied
+	// right before loading and proceeding to M.
+	//CopyPlayerSpeciesGraphics:            ;       [6427]
+	cbm64->GetCpu()->SetPC(0x6427);
 }
