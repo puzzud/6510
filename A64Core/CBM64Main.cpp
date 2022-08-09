@@ -189,6 +189,68 @@ int CBM64Main::LoadBasic(char* fname){
 }
 
 
+void CBM64Main::SetupPostKernalConfig(){
+	// $FCE2:START(RESET)
+	// ---
+	// SEI
+	// TXS from X=$FF
+	// CLD
+	//mVic->Poke(0xD016, 0); // Overwritten later.
+	
+	// $FDA3:IOINIT
+	// ---
+
+	// Kill interrupts.
+	mCia1->Poke(0xDC03, 0x7F);
+	mCia2->Poke(0xDD03, 0x7F);
+	mCia1->Poke(0xDC00, 0x7F);
+	mCia1->Poke(0xDC0E, 0x08);
+	mCia2->Poke(0xDD0E, 0x08);
+	mCia1->Poke(0xDC0F, 0x08);
+	mCia2->Poke(0xDD0F, 0x08);
+	mCia1->Poke(0xDC03, 0);
+	mCia2->Poke(0xDD03, 0);
+
+	// Volume.
+	mSid->Poke(0xD418, 0);
+
+	// Keyboard.
+	mCia1->Poke(0xDC02, 0xFF);
+	mCia2->Poke(0xDD00, 0x3F);
+
+	// System banks.
+	mBus->Poke(0x0001, 0xE7);
+	mBus->Poke(0x0000, 0x2F);
+
+	// Keyboard scan.
+	// "SIXTY" (NTSC), "SIXTYP" (PAL) is 0x94,0x42.
+	mCia1->Poke(0xDC04, 0x25);
+	mCia1->Poke(0xDC05, 0x40);
+	
+	// $FD52
+	// ---
+	// Clear zeropage, page 2, 3.
+
+	// $FF5B:CINT(Screen Initialize).
+	// ---
+	// VIC values.
+	// https://www.pagetable.com/c64ref/c64disasm/#E5A0
+	u8 vicInitValues[] = {
+		0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+		0x1B,0,0,0,0,0x08,0,0x14,0,0,0,0,0,0,0,
+		14,6,1,2,3,4,0,1,2,3,4,5,6,7
+	};
+
+	for (int i = 0; i < sizeof(vicInitValues); ++i){
+		mVic->Peek(0xD000+i);
+	}
+
+	// Clear screen memory.
+
+	// CLI
+}
+
+
 void CBM64Main::SetHiresTimeProvider(CHiresTime* hTime){
 	mProcessor->SetHiresTime(hTime);
 }

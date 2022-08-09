@@ -66,6 +66,7 @@ class CBM64Main{
 		int LoadApp(char* fname);
 		int LoadAppWithoutBasic(char* fname);
 		int LoadBasic(char* fname);
+		void SetupPostKernalConfig();
 		
 		void SetHiresTimeProvider(CHiresTime* hTime);
 
