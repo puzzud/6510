@@ -27,6 +27,12 @@
 
 extern void MainLoop(void);
 
+void SetInitialGameDifficulty(u8 gameDifficulty);
+void SetPlayerInputType(unsigned int playerIndex, u8 playerInputType);
+void SetPlayerColor(unsigned int playerIndex, u8 playerColor);
+void SetPlayerSpecies(unsigned int playerIndex, u8 playerSpecies);
+void SetFakeIntroUserSettings();
+
 
 class CustomWatcher;
 
@@ -44,12 +50,29 @@ class CustomWatcher : public CWatcher
 	{
 		if (address == 0x972B) // GameInitialize
 		{
-			cout << "GameInitialize" << endl;
+			cout << "m2 GameInitialize" << endl;
 			return;
 		}
 		else if (address == 0x9771) //DoRound
 		{
 			cout << "DoRound" << endl;
+			return;
+		}
+		else if (address == 0x55B3) // J_55B3 initial game initialization over
+		//else if (address == 0x547F)
+		{
+			SetFakeIntroUserSettings();
+
+			// Need to change some values to those
+			// right before loading (these setup during m1 confirmation screen?).
+			cbm64->GetVic()->Poke(0xD01C, 0x00);
+
+			// Part where various data is processed and copied
+			// right before loading and proceeding to M.
+			//CopyPlayerSpeciesGraphics:            ;       [6427]
+			cbm64->GetCpu()->SetPC(0x6427);
+			//cbm64->GetCpu()->SetPC(0x6290);
+
 			return;
 		}
 
@@ -139,6 +162,8 @@ int main(int argc, char* argv[]) {
 	hwController.Init();
 	hwController.SetKeyboardMode(eKeyboardModeJoystick1);
 
+	cbm64->SetupPostKernalConfig();
+
 	watcher = new CustomWatcher();
 	cbm64->SetWatcher(watcher);
 
@@ -149,8 +174,21 @@ int main(int argc, char* argv[]) {
 	}
 
 	cout << "Loaded Intro" << endl;
-	cbm64->GetCpu()->SetPC(0x4000);
+	
 	watcher->SetJumpWatch(0x655B); // Right before loading M from disk.
+
+	const bool shouldPlayIntro = false;
+	if (shouldPlayIntro)
+	{
+		cbm64->GetCpu()->SetPC(0x4000);
+	}
+	else
+	{
+		cbm64->GetCpu()->SetPC(0x4000);
+
+		watcher->SetAddressWatch(0x55B3); // J_55B3 // Address just enough to run initial setup.
+		//watcher->SetAddressWatch(0x547F);
+	}
 
 	MainLoop();
 
@@ -161,4 +199,71 @@ int main(int argc, char* argv[]) {
 	watcher = NULL;
 
 	return 0;
+}
+
+
+void SetInitialGameDifficulty(u8 gameDifficulty)
+{
+	auto bus = CBus::GetInstance();
+
+	//InitialGameDifficulty    =       $E504
+	bus->PokeDevice(eBusRam, 0xe504, gameDifficulty);
+}
+
+
+void SetPlayerInputType(unsigned int playerIndex, u8 playerInputType)
+{
+	auto bus = CBus::GetInstance();
+
+	//PlayerInputType          =       $E500
+	bus->PokeDevice(eBusRam, 0xe500 + playerIndex, playerInputType);
+}
+
+
+void SetPlayerColor(unsigned int playerIndex, u8 playerColor)
+{
+	auto bus = CBus::GetInstance();
+
+	//PlayerColor               =       $E505
+	bus->PokeDevice(eBusRam, 0xe505 + playerIndex, playerColor);
+}
+
+
+void SetPlayerSpecies(unsigned int playerIndex, u8 playerSpecies)
+{
+	auto bus = CBus::GetInstance();
+
+	//PlayerSpecies             =       $E509
+	bus->PokeDevice(eBusRam, 0xe509 + playerIndex, playerSpecies);
+}
+
+
+// NOTE: Not an m2 variable.
+void SetNumberOfHumanPlayers(u8 number)
+{
+	auto bus = CBus::GetInstance();
+
+	//NumberOfHumanPlayers:           ;       [43FF]
+	bus->PokeDevice(eBusRam, 0x43FF, number);
+}
+
+
+void SetFakeIntroUserSettings()
+{
+	SetInitialGameDifficulty(2);
+
+	for (int i = 0; i < 4; ++i)
+	{
+		SetPlayerInputType(i, 0xff); // Computer
+		SetPlayerSpecies(i, 0); // Should be all Mechtron?
+	}
+
+	SetPlayerInputType(0, 9); // Joystick 2.
+
+	SetPlayerColor(0, 5);
+	SetPlayerColor(1, 6);
+	SetPlayerColor(2, 8);
+	SetPlayerColor(3, 4);
+
+	SetNumberOfHumanPlayers(1);
 }
