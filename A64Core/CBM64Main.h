@@ -15,6 +15,7 @@
 #include "MOS6569.h"
 #include "Bus.h"
 #include "Ram.h"
+#include "Rom.h"
 #include "BasicRom.h"
 #include "KernalRom.h"
 #include "MOS6526_CIA1.h"
@@ -41,7 +42,12 @@ class CBM64Main{
 		BKE_THREAD mCBM64Thread;
 		BKE_MUTEX mMutex;
 	protected:
+		bool requireLoadedRoms;
+
+		int LoadRoms();
 	public:
+		CBM64Main() : requireLoadedRoms(true){}
+
 		int Init();
         int Cycle();
 		int Stop();
@@ -55,9 +61,13 @@ class CBM64Main{
 		CMOS6526CIA2* GetCia2();
 		CCharRom* GetCharRom();
 
+		void SetRequireLoadedRoms(bool require);
+
+		int FlashRom(CRom* rom, const char* fname);
 		int LoadApp(char* fname);
 		int LoadAppWithoutBasic(const char* fname);
 		int LoadBasic(char* fname);
+		void SetupPostKernalConfig();
 		
 		void SetWatcher(CWatcher* watcher);
 		void SetHiresTimeProvider(CHiresTime* hTime);

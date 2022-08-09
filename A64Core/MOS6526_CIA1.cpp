@@ -30,8 +30,8 @@ CMOS6526CIA1::CMOS6526CIA1(BKE_MUTEX mutex){
 	mBus = CBus::GetInstance();
 	mBus->Register(eBusCia1,this, 0xDC00, 0xDCFF);
 
-	memset(keyboardMatrix, 0xFF, 8);
-	memset(joystickStates, 0XFF, 8);
+	memset(keyboardMatrix, 0xFF, sizeof(keyboardMatrix));
+	memset(joystickStates, 0XFF, sizeof(joystickStates));
 
 	timerAEnabled = false;
 	timerACompleted = false;
@@ -109,7 +109,7 @@ u8 CMOS6526CIA1::Peek(u16 address){
 	}else if(address == 0xDC03){
 		return ddrb;
 	}else if(address == 0xDC0D){
-		u8 val = timerACompleted ? 1 : 0;
+		//u8 val = timerACompleted ? 1 : 0;
 
 		timerACompleted = false; // Reset when read.
 
@@ -154,6 +154,27 @@ int CMOS6526CIA1::Poke(u16 address, u8 val){
 bool CMOS6526CIA1::GetIRQ(){
 	return irq;
 }
+
+
+CCIA1HWController* CMOS6526CIA1::GetHWController(){
+	return mController;
+}
+
+
+void CMOS6526CIA1::RegisterHWController(CCIA1HWController* controller){
+	// Detach previous one from CIA1.
+	if (mController != NULL && mController != controller){
+		mController->SetCia1(NULL);
+	}
+	
+	mController = controller;
+
+	// Attach new one to CIA1.
+	if (controller != NULL){
+		controller->SetCia1(this);
+	}
+}
+
 
 int CMOS6526CIA1::AddKeyStroke(char c){
 	BKE_MUTEX_LOCK(mMutex);

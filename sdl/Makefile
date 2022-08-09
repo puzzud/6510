@@ -7,6 +7,7 @@ CORE_CPP = ../A64Core/MOS6510.cpp \
     ../A64Core/CBM64Main.cpp \
     ../A64Core/CharRom.cpp \
     ../A64Core/Device.cpp \
+    ../A64Core/Rom.cpp \
     ../A64Core/KernalRom.cpp \
     ../A64Core/MOS6510Debug.cpp \
     ../A64Core/MOS6526_CIA1.cpp \
@@ -17,7 +18,10 @@ CORE_CPP = ../A64Core/MOS6510.cpp \
     ../A64Core/Util.cpp \
     ../A64Core/Watcher.cpp
 
-MAIN_CPP = ../sdl/main.cpp
+MAIN_CPP = ../sdl/SDLHWScreen.cpp \
+    ../sdl/SDLHWController.cpp \
+    ../sdl/SDLMainLoop.cpp \
+    ../sdl/main.cpp
 
 SRCS = $(CORE_CPP) $(MAIN_CPP)
 
@@ -33,7 +37,7 @@ ROM_COPIES = $(subst ../roms,./roms,$(ROMS))
 
 CC = g++
 
-CFLAGS := `sdl2-config --cflags` -g $(CFLAGS)
+CFLAGS := `sdl2-config --cflags` -Wall -g $(CFLAGS)
 LFLAGS := `sdl2-config --libs` -pthread
 
 EXECUTABLE = $(OBJ_DIR)/cmos6510_sdl

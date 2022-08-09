@@ -50,19 +50,48 @@
 #define HARDWARE_SPRITE_TO_SCREEN_X_OFFSET   24
 #define HARDWARE_SPRITE_TO_SCREEN_Y_OFFSET   50
 
+
+typedef enum
+{
+	COLOR_BLACK,
+	COLOR_WHITE,
+	COLOR_RED,
+	COLOR_CYAN,
+	COLOR_PURPLE,
+	COLOR_GREEN,
+	COLOR_BLUE,
+	COLOR_YELLOW,
+	COLOR_ORANGE,
+	COLOR_BROWN,
+	COLOR_LIGHT_RED,
+	COLOR_GREY_1,
+	COLOR_GREY_2,
+	COLOR_LIGHT_GREEN,
+	COLOR_LIGHT_BLUE,
+	COLOR_GREY_3,
+
+	NUMBER_OF_COLORS
+} ColorCode;
+
+
+typedef enum _eByteRenderMode{
+	eByteRenderModeCharacter,
+	eByteRenderModeSprite
+}eByteRenderMode;
+
+class CMOS6569;
+
 class CVICHWScreen{
 public:
-		u8 GetBorderColor(){return mBorderColor;};
-		void SetBorderColor(u8 color){mBorderColor = color;};
-		u8 GetBackgroundColor(){return mBackGroundColor;};
-		void SetBackgroundColor(u8 color){mBackGroundColor = color;};
-
+		CVICHWScreen(){
+			vic = NULL;
+		}
+		void SetVic(CMOS6569* vic){this->vic = vic;}
 		virtual void OnRasterLineCompleted(unsigned int lineNumber){};
 		virtual void DrawChar(u16 address, u8 c)  = 0;
 		virtual void DrawChars(u8* memory) = 0;
 protected:
-		u8 mBorderColor;
-		u8 mBackGroundColor;
+		CMOS6569* vic;
 };
 
 
@@ -103,6 +132,7 @@ class CMOS6569 : public CDevice{
 	protected:
 	public:
 		CMOS6569();
+		virtual ~CMOS6569(){}
 		u8 GetDeviceID();
 
         void Cycle();
@@ -137,7 +167,7 @@ class CMOS6569 : public CDevice{
 		void RegisterHWScreen(CVICHWScreen* screen);
 		void HWNeedsRedraw();
 
-		void DrawByteToBuffer(u8 byte, u8* pixelColorBuffer, u8* colorCodes, int mode, bool multiColor, unsigned int horizontalScale = 1);
+		void DrawByteToBuffer(u8 byte, u8* pixelColorBuffer, u8* colorCodes, eByteRenderMode mode, bool multiColor, unsigned int horizontalScale = 1);
 		void DrawBackgroundRowToBuffer(unsigned int fieldLineNumber, u8* pixelColorBuffer);
 		void DrawSpriteRowToBuffer(unsigned int spriteIndex, unsigned int rowIndex, u8* pixelColorBuffer);
 };

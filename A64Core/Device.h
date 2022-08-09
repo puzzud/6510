@@ -17,7 +17,7 @@ private:
 protected:
 public:
 	CDevice();
-	~CDevice();
+	virtual ~CDevice();
 	virtual u8 GetDeviceID() = 0;
 	virtual u8 Peek(u16 address) = 0;
 	virtual int Poke(u16 address, u8 val) = 0; 
