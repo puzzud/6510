@@ -4,6 +4,7 @@ set(CMAKE_CXX_FLAGS_DEBUG "-Wall -g")
 set(CMAKE_CXX_FLAGS_RELEASE "-O3")
 #set(CMAKE_CXX_FLAGS -pthread)
 
+# Options
 OPTION(EMBEDDED_ROMS "Build CBM ROMs into binary" OFF)
 if(EMBEDDED_ROMS)
     add_definitions(-DEMBEDDED_ROMS)
@@ -35,6 +36,7 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED_ON)
 set(CMAKE_CXX_EXTENSIONS ON)
 
+# Sources
 set(CORE_SRC
     A64Core/BasicRom.cpp
     A64Core/Bus.cpp
@@ -53,6 +55,9 @@ set(CORE_SRC
 )
 
 set(CL_SRC
+)
+
+set(CL_MAIN_SRC
     main.cpp
 )
 
@@ -60,23 +65,42 @@ set(SDL_SRC
     sdl/SDLHWController.cpp
     sdl/SDLHWScreen.cpp
     sdl/SDLMainLoop.cpp
+)
+
+set(SDL_MAIN_SRC
     sdl/main.cpp
 )
 
 # Default: CL
 set(SRC
-    ${CORE_SRC}
     ${CL_SRC}
+)
+
+set(MAIN_SRC
+    ${CL_MAIN_SRC}
 )
 
 # SDL
 if(SDL)
     set(SRC
-        ${CORE_SRC}
         ${SDL_SRC}
+    )
+
+    set(MAIN_SRC
+        ${SDL_MAIN_SRC}
     )
 endif(SDL)
 
+# Static libraries
+add_library(A64Core STATIC
+    ${CORE_SRC}
+)
+
+add_library(${PROJECT_NAME} STATIC
+    ${SRC}
+)
+
+# ROMs
 add_custom_command(OUTPUT copy_roms
     COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_CURRENT_LIST_DIR}/roms ${CMAKE_CURRENT_BINARY_DIR}/roms
 )
@@ -91,21 +115,29 @@ else()
     set(ROMS_COMMAND copy_roms)
 endif(EMBEDDED_ROMS)
 
+# Executable
 add_executable(
-    ${PROJECT_NAME}
-    ${SRC}
+    ${PROJECT_NAME}_exe
+    ${MAIN_SRC}
     ${ROMS_COMMAND}
 )
 
+# Info
 message(STATUS "PROJECT_SOURCE_DIR: ${PROJECT_SOURCE_DIR}")
 
+# Includes & libraries
 set(PROJECT_INCLUDE_DIRECTORIES
 )
 
 find_package(Threads REQUIRED)
 
-set(PROJECT_TARGET_LIBRARIES
+set(CORE_TARGET_LIBRARIES
     Threads::Threads
+)
+
+set(PROJECT_TARGET_LIBRARIES
+    ${CORE_TARGET_LIBRARIES}
+    A64Core
 )
 
 # SDL
@@ -129,10 +161,16 @@ endif(SDL)
 #    PUBLIC "-pthread"
 #)
 
+# Linking
 #target_link_options(
 #    ${PROJECT_NAME}
 #    PUBLIC "--preload-file roms"
 #)
 
 include_directories(${PROJECT_INCLUDE_DIRECTORIES})
+
+target_link_libraries(A64Core PRIVATE ${CORE_TARGET_LIBRARIES})
 target_link_libraries(${PROJECT_NAME} PRIVATE ${PROJECT_TARGET_LIBRARIES})
+target_link_libraries(${PROJECT_NAME}_exe PRIVATE ${PROJECT_NAME} ${PROJECT_TARGET_LIBRARIES})
+
+set_target_properties(${PROJECT_NAME}_exe PROPERTIES OUTPUT_NAME ${PROJECT_NAME})
