@@ -218,7 +218,7 @@ void CBus::Poke(u16 address, u8 m){
 					// Do nothing special for now.
 				}else if(address == 0x0001){
 					//IO Port
-					u8 r0 = mPort1; //mRam.device->Peek(1);
+					//u8 r0 = mPort1; //mRam.device->Peek(1);
 					
 					u8 ioMem = m;// (r0 & m);
 					mPort1 = ioMem;

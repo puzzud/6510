@@ -146,6 +146,7 @@ const MOS6502Cycles cycleMatrix[] =
 CMOS6510::CMOS6510(BKE_MUTEX mutex){
 
 	mMemory = mBus = CBus::GetInstance();
+	mHiresTime = NULL;
 	
 	//Init the registers
 	r_pc	= mMemory->Peek16(0xFFFC);
@@ -552,8 +553,8 @@ uint64_t CMOS6510::GetCycles() {
 bool CMOS6510::GetOperandAddress(u8 addressMode, u16* address){ 
 	bool ret = true;
 	switch(addressMode){
-		ADDRESS_MODE_IMPLIED:	
-		ADDRESS_MODE_ACCUMULATOR:
+		case ADDRESS_MODE_IMPLIED:	
+		case ADDRESS_MODE_ACCUMULATOR:
 			*address = 0; //Should not happen
 			cout << "Warning: ADDRESS_MODE_IMPLIED | ADDRESS_MODE_ACCUMULATOR, GetOperandAddress should not be called." << endl;
 		case ADDRESS_MODE_IMMEDIATE:   //imm = #$00 ; (Immediate)
@@ -1638,18 +1639,20 @@ void CMOS6510::F_SBC(u8 addressmode){
 	u16 address;
 	u8 m;	
 	s16 val, acalc;
-	u8 sbit;
+	//u8 sbit;
 	
 	GetOperandAddress(addressmode, &address);
 	m = mMemory->Peek(address);
 
 	acalc = r_a - m - ( 1 - ISFLAG(FLAG_C));
 	
-
+	// Set but not used.
+	/*
 	sbit = 0;
 	if((r_a & 0x80) > 0){
 		sbit = 1;
 	}
+	*/
 
 	m = (~m);
 	m = m + ISFLAG(FLAG_C);

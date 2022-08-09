@@ -12,21 +12,21 @@
 #define KERNALROM_H
 
 #include "Common.h"
-#include "Device.h"
+#include "Rom.h"
 
 #define KERNALROMSTART 0xE000 
 #define KERNALROMEND   0xFFFF 
 #define KERNALROMSIZE  (KERNALROMEND - KERNALROMSTART + 1) 
 
-class CKernalRom : public CDevice{
+class CKernalRom : public CRom{
 	private:
-		u8 mRom[KERNALROMSIZE];
 		CKernalRom& operator+=(CKernalRom&);
 		
 	protected:
 		void GetDefaultAddressRange(u16 *from, u16 *to);
 	public:
 		CKernalRom();
+		virtual ~CKernalRom(){}
 		
 		u8 GetDeviceID();
 		u8 Peek(u16 address);

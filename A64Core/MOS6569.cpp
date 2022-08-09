@@ -23,8 +23,8 @@ static char CMOS6569TextMap[128] =
                       'x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x' };
 
 CMOS6569::CMOS6569(){
-	memset(mRegs, 0, 47);
-	memset(mColorRam, 0, (0xDBFF-0xD800));
+	memset(mRegs, 0, sizeof(mRegs));
+	memset(mColorRam, 0, sizeof(mColorRam));
 
 	irq = false;
 
@@ -131,10 +131,6 @@ int CMOS6569::Poke(u16 address, u8 val){
 			return 0; // Can't poke into this register.
 		}else if(address == 0xD01F){
 			return 0; // Can't poke into this register.
-		}else if (address == 0xD020){
-			mRenderer->SetBorderColor(val);
-		}else if (address == 0xD021){
-			mRenderer->SetBackgroundColor(val);
 		}
 
 		mRegs[address - 0xD000] = val;
@@ -243,10 +239,10 @@ bool CMOS6569::IsSpriteMultiColor(unsigned int spriteIndex){
 
 
 void CMOS6569::TestSpriteCollision(){
-	memset(backgroundFieldLinePixelColorBuffer, 0, HARDWARE_SPRITE_PIXEL_BUFFER_SIZE);
+	memset(backgroundFieldLinePixelColorBuffer, 0, sizeof(backgroundFieldLinePixelColorBuffer));
 
 	memset(spriteFieldLinePixelColorBuffers, 0,
-		NUMBER_OF_HARDWARE_SPRITES * HARDWARE_SPRITE_PIXEL_BUFFER_SIZE);
+		sizeof(spriteFieldLinePixelColorBuffers));
 
 	// HARDWARE_SPRITE_TO_SCREEN_X_OFFSET accounts for
 	// border and HBlank to match with screen background.
@@ -331,7 +327,17 @@ void CMOS6569::TestSpriteCollision(){
 
 
 void CMOS6569::RegisterHWScreen(CVICHWScreen* screen){
+	// Detach previous one from VIC.
+	if (mRenderer != NULL && mRenderer != screen){
+		mRenderer->SetVic(NULL);
+	}
+	
 	mRenderer = screen;
+
+	// Attach new one to VIC.
+	if (screen != NULL){
+		screen->SetVic(this);
+	}
 }
 
 
@@ -342,11 +348,9 @@ void CMOS6569::HWNeedsRedraw(){
 // mode parameter indicates character or sprite mode,
 // because of the discrepancy between how bit pairs
 // map to color values respectively.
-//  - 0: Character
-//  - 1: Sprite
-// Assumes at least 16 bytes of valid memory at
+// This method assumes at least 16 bytes of valid memory at
 // pixelColorBuffer, in case of horizontal scaling.
-void CMOS6569::DrawByteToBuffer(u8 byte, u8* pixelColorBuffer, u8* colorCodes, int mode, bool multiColor, unsigned int horizontalScale)
+void CMOS6569::DrawByteToBuffer(u8 byte, u8* pixelColorBuffer, u8* colorCodes, eByteRenderMode mode, bool multiColor, unsigned int horizontalScale)
 {
 	// Keep local copy of color codes,
 	// some modes may adjust how they are interpreted.
@@ -354,7 +358,7 @@ void CMOS6569::DrawByteToBuffer(u8 byte, u8* pixelColorBuffer, u8* colorCodes, i
 	memcpy(adjustedColorCodes, colorCodes, 3);
 
 	// Determine character multicolor mode behavior based on byte.
-	if (mode == 0)
+	if (mode == eByteRenderModeCharacter)
 	{
 		if (multiColor)
 		{
@@ -375,12 +379,9 @@ void CMOS6569::DrawByteToBuffer(u8 byte, u8* pixelColorBuffer, u8* colorCodes, i
 	// This variable is an attempt to help normalize
 	// the order of colors provided by colorCodes.
 	u8 singleColorCode =
-		(mode == 0) ? adjustedColorCodes[2] : adjustedColorCodes[1];
+		(mode == eByteRenderModeCharacter) ? adjustedColorCodes[2] : adjustedColorCodes[1];
 
-	//static u8 pixelColorBuffer[16];
-	//memset(pixelColorBuffer, 0, 16); // Clear it, but maybe in future expect it to be cleared ahead of time.
-
-	int bufferIndex = (8 * horizontalScale) - 1;
+	unsigned int bufferIndex = (8 * horizontalScale) - 1;
 
 	for (int x = 0; x < 8; x += 2, byte >>= 2)
 	{
@@ -403,7 +404,7 @@ void CMOS6569::DrawByteToBuffer(u8 byte, u8* pixelColorBuffer, u8* colorCodes, i
 				}
 			}
 
-			for (int s = 0; s < horizontalScale; ++s, --bufferIndex)
+			for (unsigned int s = 0; s < horizontalScale; ++s, --bufferIndex)
 			{
 				// Plus 1 to account for using 0 for transparency.
 				// Needs to be readjusted on consumption.
@@ -449,7 +450,7 @@ void CMOS6569::DrawBackgroundRowToBuffer(unsigned int fieldLineNumber, u8* pixel
 			charRowByte,
 			pixelColorBuffer,
 			colorCodes,
-			0,
+			eByteRenderModeCharacter,
 			multiColorCharacters);
 		
 		pixelColorBuffer += 8; // NOTE: Mutates function argument.
@@ -481,7 +482,7 @@ void CMOS6569::DrawSpriteRowToBuffer(unsigned int spriteIndex, unsigned int rowI
 			spriteRowByte,
 			pixelColorBuffer,
 			colorCodes,
-			1,
+			eByteRenderModeSprite,
 			IsSpriteMultiColor(spriteIndex),
 			spriteHorizontalScale);
 		
