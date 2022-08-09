@@ -65,13 +65,22 @@ class CustomWatcher : public CWatcher
 
 			// Need to change some values to those
 			// right before loading (these setup during m1 confirmation screen?).
-			cbm64->GetVic()->Poke(0xD01C, 0x00);
+			auto vic = cbm64->GetVic();
+			vic->Poke(0xD015, 0x00); // Disable all sprites.
+			vic->Poke(0xD01C, 0x00); // Make all sprites single color.
+
+			auto vicMemoryControl = vic->Peek(0xD018); // Set up VIC character memory.
+			vicMemoryControl &= 0xf1;
+			vicMemoryControl |= 10;
+			vic->Poke(0xD018, vicMemoryControl);
+
+			//DrawConfirmationScreen1:            ;       [6290]
+			//cbm64->GetCpu()->SetPC(0x6290);
 
 			// Part where various data is processed and copied
 			// right before loading and proceeding to M.
 			//CopyPlayerSpeciesGraphics:            ;       [6427]
 			cbm64->GetCpu()->SetPC(0x6427);
-			//cbm64->GetCpu()->SetPC(0x6290);
 
 			return;
 		}
@@ -95,13 +104,13 @@ class CustomWatcher : public CWatcher
 				SetAddressWatch(0x972B); // GameInitialize
 				SetAddressWatch(0x9771); // DoRound
 
-				SetReadWatch(0xE509+0);
-				SetReadWatch(0xE509+1);
-				SetReadWatch(0xE509+2);
-				SetReadWatch(0xE509+3);
+				//SetReadWatch(0xE509+0);
+				//SetReadWatch(0xE509+1);
+				//SetReadWatch(0xE509+2);
+				//SetReadWatch(0xE509+3);
 
-				SetWriteWatch(0x48);
-				SetWriteWatch(0xDF12);
+				//SetWriteWatch(0x48);
+				//SetWriteWatch(0xDF12);
 			}
 		}
 	};
