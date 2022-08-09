@@ -252,18 +252,34 @@ void SetFakeIntroUserSettings()
 {
 	SetInitialGameDifficulty(2);
 
-	for (int i = 0; i < 4; ++i)
+	int numberOfHumanPlayers = 1;
+	SetNumberOfHumanPlayers(numberOfHumanPlayers);
+
+	int numberOfAiPlayers = 4 - numberOfHumanPlayers;
+
+	int playerIndex = 0;
+	for (; playerIndex < numberOfAiPlayers; ++playerIndex)
 	{
-		SetPlayerInputType(i, 0xff); // Computer
-		SetPlayerSpecies(i, 0); // Should be all Mechtron?
+		SetPlayerInputType(playerIndex, 0xff); // Computer
+		SetPlayerSpecies(playerIndex, 0); // Should be all Mechtron?
 	}
 
-	SetPlayerInputType(0, 9); // Joystick 2.
+	// NOTE: Human players must be ascend from
+	// index 3 to 0, for mule to run correctly.
+	// Mainly it's for the AI routines.
+	int humanPlayerCount = 0;
+	for (; playerIndex < 4; ++playerIndex, ++humanPlayerCount)
+	{
+		// 9 is Joystick 2.
+		// 8 is Joystick 1.
+		SetPlayerInputType(playerIndex, 9 - humanPlayerCount);
+
+		// 1 is Gollumer.
+		SetPlayerSpecies(playerIndex, 1 + humanPlayerCount);
+	}
 
 	SetPlayerColor(0, 5);
 	SetPlayerColor(1, 6);
 	SetPlayerColor(2, 8);
 	SetPlayerColor(3, 4);
-
-	SetNumberOfHumanPlayers(1);
 }
