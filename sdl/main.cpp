@@ -69,8 +69,8 @@ class CustomWatcher : public CWatcher
 				
 				ClearJumpWatch(0x655B);
 
-				SetAddressWatch(0x972B);
-				SetAddressWatch(0x9771);
+				SetAddressWatch(0x972B); // GameInitialize
+				SetAddressWatch(0x9771); // DoRound
 
 				SetReadWatch(0xE509+0);
 				SetReadWatch(0xE509+1);
@@ -137,19 +137,20 @@ int main(int argc, char* argv[]) {
     SDLHWController hwController;
     cbm64->GetCia1()->RegisterHWController(&hwController);
 	hwController.Init();
+	hwController.SetKeyboardMode(eKeyboardModeJoystick1);
 
 	watcher = new CustomWatcher();
 	cbm64->SetWatcher(watcher);
 
-	if (argc > 1){
-		if (cbm64->LoadAppWithoutBasic(argv[1]) == 0){
-			watcher->SetJumpWatch(0x655B);
-		
-			if (argc > 2){
-				cbm64->GetCpu()->SetPC(std::strtol(argv[2], NULL, 16));
-			}
-		}
+	if (cbm64->LoadAppWithoutBasic("/home/puzzud/temp/Desktop/mule.2") != 0)
+	{
+		cout << "Failed to load Intro" << endl;
+		return -1;
 	}
+
+	cout << "Loaded Intro" << endl;
+	cbm64->GetCpu()->SetPC(0x4000);
+	watcher->SetJumpWatch(0x655B); // Right before loading M from disk.
 
 	MainLoop();
 
@@ -158,8 +159,6 @@ int main(int argc, char* argv[]) {
 
 	delete watcher;
 	watcher = NULL;
-
-	std::cout << "ended..." << std::endl;
 
 	return 0;
 }

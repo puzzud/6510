@@ -46,7 +46,7 @@ void MainLoop(void){
 			// and some other things like the interrupt vector values and
 			// and the raster compare line number on the VIC. But checking that
 			// that stuff right now is too early.			
-			sdlHwController->keyboardMode = eKeyboardModeBASIC;
+			sdlHwController->SetKeyboardMode(eKeyboardModeBASIC);
 		}
 	}
 

@@ -228,3 +228,14 @@ void SDLHWController::OnInputTextInputEvent(SDL_Event* event)
 		cia1->AddKeyStroke(char(keySymbol));
 	}
 }
+
+
+void SDLHWController::SetKeyboardMode(eKeyboardMode keyboardMode)
+{
+	// TODO: Remove this custom hack:
+	if (keyboardMode == eKeyboardModeBASIC){
+		return;
+	}
+
+	this->keyboardMode = keyboardMode;
+}

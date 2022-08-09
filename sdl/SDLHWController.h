@@ -46,11 +46,13 @@ public:
 
 	void Process(bool& running);
 
-	eKeyboardMode keyboardMode;
+	void SetKeyboardMode(eKeyboardMode keyboardMode);
 protected:
 	void OnInputEvent(SDL_Event* event);
 	void OnInputKeyEvent(SDL_Event* event, unsigned int isDown);
 	void OnInputTextInputEvent(SDL_Event* event);
+
+	eKeyboardMode keyboardMode;
 };
 
 #endif //SDLHWCONTROLLER_H
