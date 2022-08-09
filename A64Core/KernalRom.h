@@ -12,15 +12,14 @@
 #define KERNALROM_H
 
 #include "Common.h"
-#include "Device.h"
+#include "Rom.h"
 
 #define KERNALROMSTART 0xE000 
 #define KERNALROMEND   0xFFFF 
 #define KERNALROMSIZE  (KERNALROMEND - KERNALROMSTART + 1) 
 
-class CKernalRom : public CDevice{
+class CKernalRom : public CRom{
 	private:
-		u8 mRom[KERNALROMSIZE];
 		CKernalRom& operator+=(CKernalRom&);
 		
 	protected:

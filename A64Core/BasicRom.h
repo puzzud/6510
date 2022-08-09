@@ -11,15 +11,14 @@
 #define BASICROM_H
 
 #include "Common.h"
-#include "Device.h"
+#include "Rom.h"
 
 #define BASICROMSTART  0xA000
 #define BASICROMEND    0xBFFF
 #define BASICROMSIZE   (BASICROMEND - BASICROMSTART + 1) 
 
-class CBasicRom : public CDevice{
+class CBasicRom : public CRom{
 	private:
-		u8 mRom[BASICROMSIZE];
 		CBasicRom& operator+=(CBasicRom&);
 	
 	protected:

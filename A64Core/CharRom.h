@@ -11,15 +11,14 @@
 #define CHARROM_H
 
 #include "Common.h"
-#include "Device.h"
+#include "Rom.h"
 
 #define CHARROMSTART  0xD000
 #define CHARROMEND    0xDFFF
 #define CHARROMSIZE   (CHARROMEND - CHARROMSTART + 1) 
 
-class CCharRom : public CDevice{
+class CCharRom : public CRom{
 	private:
-		u8 mRom[CHARROMSIZE];
 		CCharRom& operator+=(CCharRom&);
 	
 	protected:

@@ -43,6 +43,7 @@ set(CORE_SRC
     A64Core/CBM64Main.cpp
     A64Core/CharRom.cpp
     A64Core/Device.cpp
+    A64Core/Rom.cpp
     A64Core/KernalRom.cpp
     A64Core/MOS6510.cpp
     A64Core/MOS6510Debug.cpp

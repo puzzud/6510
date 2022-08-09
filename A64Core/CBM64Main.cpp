@@ -18,16 +18,23 @@ int CBM64Main::Init(){
 	BKE_MUTEX_CREATE(mMutex);	 
 	
 	mBus = CBus::GetInstance();
-	mVic = new CMOS6569();	
-	mRam = new CRam();	
+
+	// Load ROMs first,
+	// as CMOS6510 constructor
+	// requires them to be loaded.
 	mBasicRom = new CBasicRom();
 	mKernalRom = new CKernalRom();
+	mCharRom = new CCharRom();
+	LoadRoms();
+
+	mRam = new CRam();	
+
+	mVic = new CMOS6569();	
 	mProcessor = new CMOS6510(mMutex);
 	mCia1 = new CMOS6526CIA1(mMutex);
 	mCia2 = new CMOS6526CIA2(mMutex);
-	mCharRom = new CCharRom();
 	mSid = new CMOS6581();
-	
+
     return 0;
 }
 
@@ -89,6 +96,61 @@ int CBM64Main::GetDisassemble(){
 }
 
 
+void CBM64Main::SetRequireLoadedRoms(bool require){
+	requireLoadedRoms = require;
+}
+
+
+int CBM64Main::FlashRom(CRom* rom, const char* fname){
+	ifstream file(fname, ios::in|ios::binary|ios::ate);
+	if (!file.is_open()){
+		return -1;
+	}
+
+	unsigned int fileSize = file.tellg();
+	file.seekg(0, ios::beg);
+
+	u8* m = new u8[fileSize];
+	file.read((char*)m, fileSize);
+	file.close();
+
+	int result = rom->Flash(m);
+
+	delete[] m;
+	m = NULL;
+
+	return result;
+}
+
+
+int CBM64Main::LoadRoms(){
+#ifndef EMBEDDED_ROMS
+	if (FlashRom(mBasicRom, LOCATION_ROMS "BASIC.ROM") != 0){
+		if (requireLoadedRoms){
+			cout << "BASIC.ROM could not be loaded." << endl;
+			exit(-1);
+		}
+	}
+
+	if (FlashRom(mCharRom, LOCATION_ROMS "CHAR.ROM") != 0){
+		if (requireLoadedRoms){
+			cout << "BASIC.ROM could not be loaded." << endl;
+			exit(-1);
+		}
+	}
+
+	if (FlashRom(mKernalRom, LOCATION_ROMS "KERNAL.ROM") != 0){
+		if (requireLoadedRoms){
+			cout << "BASIC.ROM could not be loaded." << endl;
+			exit(-1);
+		}
+	}
+#endif
+
+	return 0;
+}
+
+
 int CBM64Main::LoadApp(char* fname){
 	return mRam->LoadApp(fname);
 }
@@ -111,7 +173,7 @@ int CBM64Main::LoadAppWithoutBasic(char* fname){
 		
 		mRam->PokeBlock(startAddress, m, fileSize - 2);
 
-		delete m;
+		delete[] m;
 		m = NULL;
 	}else{
 		cout << "Could not load file : " << fname << endl;

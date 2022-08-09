@@ -19,7 +19,7 @@ extern char _binary_CHAR_ROM_end[];
 #endif
 
 
-CCharRom::CCharRom():CDevice(){
+CCharRom::CCharRom():CRom(CHARROMSIZE){
 #ifdef EMBEDDED_ROMS
     std::cout << "adding embedded rom" << std::endl;
     int len = (uint64_t)(&_binary_CHAR_ROM_end) - (uint64_t)(&_binary_CHAR_ROM_start);
@@ -28,17 +28,6 @@ CCharRom::CCharRom():CDevice(){
         exit(-1);
     }
     memcpy(mRom, _binary_CHAR_ROM_start, CHARROMSIZE);
-#else
-	//Load ROM's
-	ifstream file (LOCATION_ROMS "CHAR.ROM", ios::in|ios::binary|ios::ate);
-	if (file.is_open()){
-		file.seekg (0, ios::beg);
-		file.read ((char*)mRom, CHARROMSIZE);
-		file.close();
-	}else{
-		cout << "Could not load CHAR.ROM error" << endl;
-		exit(-1);
-	}
 #endif	
 	CBus::GetInstance()->Register(eBusCharRom, this, CHARROMSTART, CHARROMEND);
 	
