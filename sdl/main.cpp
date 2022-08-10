@@ -37,8 +37,19 @@ extern void MainLoop(void);
 
 #define M2_JumpToGameInitialize                0x4000
 #define M2_AddMessage                          0x437b
+#define M2_DoShipArrive                        0x5563
+#define M2_DoShipLeave                         0x557B
+#define M2_DoRoundEvent                        0x59f4
+#define M2_DoGoodAuction                       0x7f5b
+#define M2_CalculateScoresDoStatusScreen       0x8c3e
 #define M2_GameInitialize                      0x972b
 #define M2_DoRound                             0x9771
+#define M2_EndRoundEvent                       0x97f1
+#define M2_DoLandGrant                         0x9bff
+#define M2_DoDevelopmentTurn                   0xa637
+#define M2_AuctionTrade                        0xb362
+#define M2_DoRandomLandAuctions                0xbcfb
+#define M2_DoPlayerLandAuction                 0xbd51
 
 #define M2_RoundNumber                         0x0048
 #define M2_UnmappedIoSpaceStart                0xdf12
@@ -70,6 +81,8 @@ CBM64Main* cbm64 = NULL;
 CustomWatcher* watcher = NULL;
 
 unsigned int CurrentModuleId;
+unsigned int ScreenId;
+unsigned int SubScreenId;
 bool ShouldPlayIntro = false;
 bool DelayBeforeM2Load = false;
 
@@ -91,12 +104,102 @@ class CustomWatcher : public CWatcher
 			cout << "GameInitialize" << endl;
 			return;
 		}
-		else if (address == M2_DoRound) //DoRound
+		else */if (address == M2_DoRound)
 		{
+			ScreenId = 0;
+			SubScreenId = 0;
+
 			cout << "DoRound" << endl;
-			return;
+			return 0;
 		}
-		*/
+		else if (address == M2_DoLandGrant)
+		{
+			ScreenId = 0;
+			SubScreenId = 1;
+
+			cout << "DoLandGrant" << endl;
+			return 0;
+		}
+		else if (address == M2_DoPlayerLandAuction)
+		{
+			ScreenId = 0;
+			SubScreenId = 2;
+
+			cout << "DoPlayerLandAuction" << endl;
+			return 0;
+		}
+		else if (address == M2_DoRandomLandAuctions)
+		{
+			ScreenId = 0;
+			SubScreenId = 3;
+
+			cout << "DoRandomLandAuctions" << endl;
+			return 0;
+		}
+		else if (address == M2_DoDevelopmentTurn)
+		{
+			ScreenId = 0;
+			SubScreenId = 4;
+
+			cout << "DoDevelopmentTurn" << endl;
+			return 0;
+		}
+		else if (address == M2_DoRoundEvent)
+		{
+			ScreenId = 0;
+			SubScreenId = 5;
+
+			cout << "DoRoundEvent" << endl;
+			return 0;
+		}
+		else if (address == M2_DoShipArrive)
+		{
+			ScreenId = 0;
+			SubScreenId = 5;
+
+			cout << "DoShipArrive" << endl;
+			return 0;
+		}
+		else if (address == M2_DoShipLeave)
+		{
+			ScreenId = 0;
+			SubScreenId = 5;
+
+			cout << "DoShipLeave" << endl;
+			return 0;
+		}
+		else if (address == M2_EndRoundEvent)
+		{
+			ScreenId = 0;
+			SubScreenId = 6;
+
+			cout << "EndRoundEvent" << endl;
+			return 0;
+		}
+		else if (address == M2_DoGoodAuction)
+		{
+			ScreenId = 1;
+			SubScreenId = 0;
+
+			cout << "DoGoodAuction" << endl;
+			return 0;
+		}
+		else if (address == M2_AuctionTrade)
+		{
+			ScreenId = 2;
+			SubScreenId = 0;
+
+			cout << "AuctionTrade" << endl;
+			return 0;
+		}
+		else if (address == M2_CalculateScoresDoStatusScreen)
+		{
+			ScreenId = 3;
+			SubScreenId = 0;
+
+			cout << "CalculateScoresDoStatusScreen" << endl;
+			return 0;
+		}
 
 		cout << "Watcher Address: " << std::hex << int(address) << std::dec << endl;
 
@@ -253,6 +356,8 @@ void BootM1()
 	}
 
 	CurrentModuleId = 0;
+	ScreenId = 0;
+	SubScreenId = 0;
 }
 
 
@@ -362,12 +467,20 @@ proceedToM2:
 	watcher->ClearJumpWatch(M1_ProcessSettingsOver);
 
 	//watcher->SetAddressWatch(M2_GameInitialize);
-	//watcher->SetAddressWatch(M2_DoRound);
+	watcher->SetAddressWatch(M2_DoRound);
+	watcher->SetAddressWatch(M2_DoLandGrant);
+	watcher->SetAddressWatch(M2_DoPlayerLandAuction);
+	watcher->SetAddressWatch(M2_DoRandomLandAuctions);
+	watcher->SetAddressWatch(M2_DoDevelopmentTurn);
+	watcher->SetAddressWatch(M2_DoRoundEvent);
+	watcher->SetAddressWatch(M2_DoShipArrive);
+	watcher->SetAddressWatch(M2_DoShipLeave);
+	watcher->SetAddressWatch(M2_EndRoundEvent);
+	watcher->SetAddressWatch(M2_DoGoodAuction);
+	watcher->SetAddressWatch(M2_AuctionTrade);
+	watcher->SetAddressWatch(M2_CalculateScoresDoStatusScreen);
 
-	//SetWriteWatch(M2_RoundNumber);
-	//SetWriteWatch(M2_UnmappedIoSpaceStart);
-
-	watcher->SetJumpWatch(M2_AddMessage);
+	//watcher->SetJumpWatch(M2_AddMessage);
 
 	auto vic = cbm64->GetVic();
 	vic->Poke(0xD011, vic->Peek(0xD011) & ~0x10);
