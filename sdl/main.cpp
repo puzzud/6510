@@ -27,13 +27,36 @@
 
 extern void MainLoop(void);
 
-void SetInitialGameDifficulty(u8 gameDifficulty);
-void SetPlayerInputType(unsigned int playerIndex, u8 playerInputType);
-void SetPlayerColor(unsigned int playerIndex, u8 playerColor);
-void SetPlayerSpecies(unsigned int playerIndex, u8 playerSpecies);
+#define M1_JumpToInitializeIntro               0x4000
+#define M1_InitializeOver                      0x55b3
+#define M1_CopyPlayerSpeciesGraphics           0x6427
+#define M1_ProcessSettingsOver                 0x655b
 
-void SetFakeIntroUserSettings();
-void ApplySettingsAndJumpToDataCopy();
+#define M1_NumberOfHumanPlayers                0x43ff
+#define M1_InitialGameDifficulty               0xe504
+
+#define M2_JumpToGameInitialize                0x4000
+#define M2_GameInitialize                      0x972b
+#define M2_DoRound                             0x9771
+
+#define M2_RoundNumber                         0x0048
+#define M2_UnmappedIoSpaceStart                0xdf12
+
+#define MX_PlayerInputType                     0xe500
+#define MX_PlayerColor                         0xe505
+#define MX_PlayerSpecies                       0xe509
+
+void BootM1();
+
+void M1_SetInitialGameDifficulty(u8 gameDifficulty);
+void M1_SetFakeIntroUserSettings();
+void M1_ApplySettingsAndJumpToDataCopy();
+void M1_LoadAndBootM2();
+
+void MX_SetPlayerInputType(unsigned int playerIndex, u8 playerInputType);
+void MX_SetPlayerColor(unsigned int playerIndex, u8 playerColor);
+void MX_SetPlayerSpecies(unsigned int playerIndex, u8 playerSpecies);
+
 
 class CustomWatcher;
 
@@ -41,6 +64,7 @@ class CustomWatcher;
 CBM64Main* cbm64 = NULL;
 CustomWatcher* watcher = NULL;
 
+unsigned int CurrentModuleId;
 
 class CustomWatcher : public CWatcher
 {
@@ -49,72 +73,46 @@ class CustomWatcher : public CWatcher
 	
 	virtual void ReportAddressWatch(u16 address)
 	{
-		if (address == 0x972B) // GameInitialize
+		if (address == M1_InitializeOver)
 		{
-			cout << "m2 GameInitialize" << endl;
+			M1_ApplySettingsAndJumpToDataCopy();
+
 			return;
 		}
-		else if (address == 0x9771) //DoRound
+		/*else if (address == M2_GameInitialize) // GameInitialize
+		{
+			cout << "GameInitialize" << endl;
+			return;
+		}
+		else if (address == M2_DoRound) //DoRound
 		{
 			cout << "DoRound" << endl;
 			return;
 		}
-		else if (address == 0x55B3) // J_55B3 initial game initialization over
-		//else if (address == 0x547F)
-		{
-			ApplySettingsAndJumpToDataCopy();
-
-			return;
-		}
+		*/
 
 		cout << "Watcher Address: " << std::hex << int(address) << std::dec << endl;
 	};
 
 	virtual void ReportJumpWatch(u16 address, eWatcherJumpType jumpType)
 	{
-		cout << "Watcher Jump: " << std::hex << int(address) << std::dec << endl;
-
-		if (address == 0x655B)
+		if (address == M1_ProcessSettingsOver)
 		{
-			if (cbm64->LoadAppWithoutBasic("/home/puzzud/temp/Desktop/m") == 0)
-			{
-				cout << "Loaded M" << endl;
-				cbm64->GetCpu()->SetPC(0x4000);
-				
-				ClearJumpWatch(0x655B);
-
-				SetAddressWatch(0x972B); // GameInitialize
-				SetAddressWatch(0x9771); // DoRound
-
-				//SetReadWatch(0xE509+0);
-				//SetReadWatch(0xE509+1);
-				//SetReadWatch(0xE509+2);
-				//SetReadWatch(0xE509+3);
-
-				//SetWriteWatch(0x48);
-				//SetWriteWatch(0xDF12);
-			}
+			M1_LoadAndBootM2();
+			return;
 		}
+
+		cout << "Watcher Jump: " << std::hex << int(address) << std::dec << endl;
 	};
 
 	virtual void ReportReadWatch(u16 address)
 	{
-		if (address >= 0xE509 && address < 0xE509+4)
-		{
-			auto bus = CBus::GetInstance();
-			u8 planeteerSpecies = bus->Peek(address);
-
-			cout << "PlaneteerSpecies Read: " << int(planeteerSpecies) << endl;
-
-			return;
-		}
-
 		cout << "Watcher Read: " << std::hex << int(address) << std::dec << endl;
 	}
 
 	virtual void ReportWriteWatch(u16 address)
 	{
-		if (address == 0x48)
+		/*if (address == M2_RoundNumber)
 		{
 			auto bus = CBus::GetInstance();
 			u8 roundNumber = bus->Peek(address);
@@ -122,14 +120,14 @@ class CustomWatcher : public CWatcher
 			cout << "RoundNumber" << ": " << int(roundNumber) << endl;
 
 			return;
-		}else if (address == 0xDF12)
+		}else if (address == M2_UnmappedIoSpaceStart)
 		{
 			cout  << std::hex;
 			cout << "Watcher Write: " << int(address);
 			cout << " before PC: " << int(cbm64->GetCpu()->GetPC()) << endl;
 			cout << std::dec;
 			return;
-		}
+		}*/
 
 		cout << "Watcher Write: " << std::hex << int(address) << std::dec << endl;
 	}
@@ -158,26 +156,7 @@ int main(int argc, char* argv[]) {
 	watcher = new CustomWatcher();
 	cbm64->SetWatcher(watcher);
 
-	if (cbm64->LoadAppWithoutBasic("/home/puzzud/temp/Desktop/mule.2") != 0)
-	{
-		cout << "Failed to load Intro" << endl;
-		return -1;
-	}
-
-	cout << "Loaded Intro" << endl;
-	
-	watcher->SetJumpWatch(0x655B); // Right before loading M from disk.
-
-	const bool shouldPlayIntro = false;
-	if (shouldPlayIntro)
-	{
-		cbm64->GetCpu()->SetPC(0x4000);
-	}
-	else
-	{
-		cbm64->GetCpu()->SetPC(0x4000);
-		watcher->SetAddressWatch(0x55B3); // J_55B3 // Address just enough to run initial setup.
-	}
+	BootM1();
 
 	MainLoop();
 
@@ -191,66 +170,63 @@ int main(int argc, char* argv[]) {
 }
 
 
-void SetInitialGameDifficulty(u8 gameDifficulty)
+void BootM1()
 {
-	auto bus = CBus::GetInstance();
+	if (cbm64->LoadAppWithoutBasic("/home/puzzud/temp/Desktop/mule.2") != 0)
+	{
+		cout << "Failed to load Intro" << endl;
+		return;
+	}
 
-	//InitialGameDifficulty    =       $E504
-	bus->PokeDevice(eBusRam, 0xe504, gameDifficulty);
+	cout << "Loaded Intro" << endl;
+	
+	// Set jump watch for right before loading M from disk.
+	watcher->SetJumpWatch(M1_ProcessSettingsOver);
+
+	const bool shouldPlayIntro = false;
+	if (shouldPlayIntro)
+	{
+		cbm64->GetCpu()->SetPC(M1_JumpToInitializeIntro);
+	}
+	else
+	{
+		cbm64->GetCpu()->SetPC(M1_JumpToInitializeIntro);
+		watcher->SetAddressWatch(M1_InitializeOver);
+	}
+
+	CurrentModuleId = 0;
 }
 
 
-void SetPlayerInputType(unsigned int playerIndex, u8 playerInputType)
+void M1_SetInitialGameDifficulty(u8 gameDifficulty)
 {
 	auto bus = CBus::GetInstance();
-
-	//PlayerInputType          =       $E500
-	bus->PokeDevice(eBusRam, 0xe500 + playerIndex, playerInputType);
-}
-
-
-void SetPlayerColor(unsigned int playerIndex, u8 playerColor)
-{
-	auto bus = CBus::GetInstance();
-
-	//PlayerColor               =       $E505
-	bus->PokeDevice(eBusRam, 0xe505 + playerIndex, playerColor);
-}
-
-
-void SetPlayerSpecies(unsigned int playerIndex, u8 playerSpecies)
-{
-	auto bus = CBus::GetInstance();
-
-	//PlayerSpecies             =       $E509
-	bus->PokeDevice(eBusRam, 0xe509 + playerIndex, playerSpecies);
+	bus->PokeDevice(eBusRam, M1_InitialGameDifficulty, gameDifficulty);
 }
 
 
 // NOTE: Not an m2 variable.
-void SetNumberOfHumanPlayers(u8 number)
+void M1_SetNumberOfHumanPlayers(u8 number)
 {
 	auto bus = CBus::GetInstance();
-
-	//NumberOfHumanPlayers:           ;       [43FF]
-	bus->PokeDevice(eBusRam, 0x43FF, number);
+	bus->PokeDevice(eBusRam, M1_NumberOfHumanPlayers, number);
 }
 
 
-void SetFakeIntroUserSettings()
+void M1_SetFakeIntroUserSettings()
 {
-	SetInitialGameDifficulty(2);
+	M1_SetInitialGameDifficulty(2);
 
 	int numberOfHumanPlayers = 1;
-	SetNumberOfHumanPlayers(numberOfHumanPlayers);
+	M1_SetNumberOfHumanPlayers(numberOfHumanPlayers);
 
 	int numberOfAiPlayers = 4 - numberOfHumanPlayers;
 
 	int playerIndex = 0;
 	for (; playerIndex < numberOfAiPlayers; ++playerIndex)
 	{
-		SetPlayerInputType(playerIndex, 0xff); // Computer
-		SetPlayerSpecies(playerIndex, 0); // Should be all Mechtron?
+		MX_SetPlayerInputType(playerIndex, 0xff); // Computer
+		MX_SetPlayerSpecies(playerIndex, 0); // Should be all Mechtron?
 	}
 
 	// NOTE: Human players must be ascend from
@@ -261,22 +237,22 @@ void SetFakeIntroUserSettings()
 	{
 		// 9 is Joystick 2.
 		// 8 is Joystick 1.
-		SetPlayerInputType(playerIndex, 9 - humanPlayerCount);
+		MX_SetPlayerInputType(playerIndex, 9 - humanPlayerCount);
 
 		// 1 is Gollumer.
-		SetPlayerSpecies(playerIndex, 1 + humanPlayerCount);
+		MX_SetPlayerSpecies(playerIndex, 1 + humanPlayerCount);
 	}
 
-	SetPlayerColor(0, 5);
-	SetPlayerColor(1, 6);
-	SetPlayerColor(2, 8);
-	SetPlayerColor(3, 4);
+	MX_SetPlayerColor(0, 5);
+	MX_SetPlayerColor(1, 6);
+	MX_SetPlayerColor(2, 8);
+	MX_SetPlayerColor(3, 4);
 }
 
 
-void ApplySettingsAndJumpToDataCopy()
+void M1_ApplySettingsAndJumpToDataCopy()
 {
-	SetFakeIntroUserSettings();
+	M1_SetFakeIntroUserSettings();
 
 	// Need to change some values to those
 	// right before loading (these setup during m1 confirmation screen?).
@@ -289,11 +265,50 @@ void ApplySettingsAndJumpToDataCopy()
 	vicMemoryControl |= 10;
 	vic->Poke(0xD018, vicMemoryControl);
 
-	//DrawConfirmationScreen1:            ;       [6290]
-	//cbm64->GetCpu()->SetPC(0x6290);
-
 	// Part where various data is processed and copied
 	// right before loading and proceeding to M.
-	//CopyPlayerSpeciesGraphics:            ;       [6427]
-	cbm64->GetCpu()->SetPC(0x6427);
+	cbm64->GetCpu()->SetPC(M1_CopyPlayerSpeciesGraphics);
+}
+
+
+void M1_LoadAndBootM2()
+{
+	if (cbm64->LoadAppWithoutBasic("/home/puzzud/temp/Desktop/m") != 0)
+	{
+		cout << "Failed to load M2" << endl;
+		return;
+	}
+
+	cout << "Loaded M" << endl;
+
+	cbm64->GetCpu()->SetPC(M2_JumpToGameInitialize);
+	CurrentModuleId = 1;
+	
+	watcher->ClearJumpWatch(M1_ProcessSettingsOver);
+
+	//watcher->SetAddressWatch(M2_GameInitialize);
+	//watcher->SetAddressWatch(M2_DoRound);
+
+	//SetWriteWatch(M2_RoundNumber);
+	//SetWriteWatch(M2_UnmappedIoSpaceStart);
+}
+
+void MX_SetPlayerInputType(unsigned int playerIndex, u8 playerInputType)
+{
+	auto bus = CBus::GetInstance();
+	bus->PokeDevice(eBusRam, MX_PlayerInputType + playerIndex, playerInputType);
+}
+
+
+void MX_SetPlayerColor(unsigned int playerIndex, u8 playerColor)
+{
+	auto bus = CBus::GetInstance();
+	bus->PokeDevice(eBusRam, MX_PlayerColor + playerIndex, playerColor);
+}
+
+
+void MX_SetPlayerSpecies(unsigned int playerIndex, u8 playerSpecies)
+{
+	auto bus = CBus::GetInstance();
+	bus->PokeDevice(eBusRam, MX_PlayerSpecies + playerIndex, playerSpecies);
 }
