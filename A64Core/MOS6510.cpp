@@ -438,7 +438,9 @@ u16 CMOS6510::Pop16(){
 int CMOS6510::Cycle() {
 		if(mWatcher != NULL){
 			if(mWatcher->CheckAddressWatch(r_pc)){
-				mWatcher->ReportAddressWatch(r_pc);
+				if(mWatcher->ReportAddressWatch(r_pc) != 0){
+					return 0;
+				};
 			}
 		}
 

@@ -71,13 +71,13 @@ class CustomWatcher : public CWatcher
     public:
 	protected:
 	
-	virtual void ReportAddressWatch(u16 address)
+	virtual int ReportAddressWatch(u16 address)
 	{
 		if (address == M1_InitializeOver)
 		{
 			M1_ApplySettingsAndJumpToDataCopy();
 
-			return;
+			return 1;
 		}
 		/*else if (address == M2_GameInitialize) // GameInitialize
 		{
@@ -92,17 +92,21 @@ class CustomWatcher : public CWatcher
 		*/
 
 		cout << "Watcher Address: " << std::hex << int(address) << std::dec << endl;
+
+		return 0;
 	};
 
-	virtual void ReportJumpWatch(u16 address, eWatcherJumpType jumpType)
+	virtual int ReportJumpWatch(u16 address, eWatcherJumpType jumpType)
 	{
 		if (address == M1_ProcessSettingsOver)
 		{
 			M1_LoadAndBootM2();
-			return;
+			return 1;
 		}
 
 		cout << "Watcher Jump: " << std::hex << int(address) << std::dec << endl;
+
+		return 0;
 	};
 
 	virtual void ReportReadWatch(u16 address)

@@ -33,12 +33,12 @@ public:
 	void SetAddressWatch(u16 address);
 	void ClearAddressWatch(u16 address);
 	bool CheckAddressWatch(u16 address);
-	virtual void ReportAddressWatch(u16 address) = 0;
+	virtual int ReportAddressWatch(u16 address) = 0;
 
 	void SetJumpWatch(u16 address);
 	void ClearJumpWatch(u16 address);
 	bool CheckJumpWatch(u16 address);
-	virtual void ReportJumpWatch(u16 address, eWatcherJumpType jumpType) = 0;
+	virtual int ReportJumpWatch(u16 address, eWatcherJumpType jumpType) = 0;
 
 	void SetReadWatch(u16 address);
 	void ClearReadWatch(u16 address);
