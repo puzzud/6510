@@ -10,59 +10,142 @@
 #include "Watcher.h"
 
 CWatcher::CWatcher(){
-    memset(mAddressWatches, 0, 0x10000);
-    memset(mJumpWatches, 0, 0x10000);
-    memset(mReadWatches, 0, 0x10000);
-    memset(mWriteWatches, 0, 0x10000);
+    memset(mAddressWatches, 0, WATCHER_ADDRESS_SIZE);
+    memset(mJumpWatches, 0, WATCHER_ADDRESS_SIZE);
+    memset(mReadWatches, 0, WATCHER_ADDRESS_SIZE);
+    memset(mWriteWatches, 0, WATCHER_ADDRESS_SIZE);
+
+    for (int i = 0; i < WATCHER_ADDRESS_SIZE; ++i){
+        mAddressCallbacks[i] = NULL;
+        mJumpCallbacks[i] = NULL;
+        mReadCallbacks[i] = NULL;
+        mWriteCallbacks[i] = NULL;
+    }
 }
 
 CWatcher::~CWatcher(){
 }
 
-void CWatcher::SetAddressWatch(u16 address){
+
+void CWatcher::SetAddressWatch(u16 address, WatchCallback callback){
     mAddressWatches[address] = 1;
+    mAddressCallbacks[address] = callback;
 }
+
 
 void CWatcher::ClearAddressWatch(u16 address){
     mAddressWatches[address] = 0;
+    mAddressCallbacks[address] = NULL;
 }
+
 
 bool CWatcher::CheckAddressWatch(u16 address){
-    return mAddressWatches[address] != 0;
+    if (mAddressWatches[address] != 0){
+        WatchCallback callback = mAddressCallbacks[address];
+        if (callback != NULL){
+            return (this->*callback)(address) != 0;
+        }
+
+        return GeneralReportAddressWatch(address) != 0;
+    }
+
+    return false;
 }
 
-void CWatcher::SetJumpWatch(u16 address){
-    mJumpWatches[address] = 1;
+
+int CWatcher::GeneralReportAddressWatch(u16 address){
+    return 0;
 }
+
+
+void CWatcher::SetJumpWatch(u16 address, WatchCallback callback){
+    mJumpWatches[address] = 1;
+    mJumpCallbacks[address] = callback;
+}
+
 
 void CWatcher::ClearJumpWatch(u16 address){
     mJumpWatches[address] = 0;
+    mJumpCallbacks[address] = NULL;
 }
 
-bool CWatcher::CheckJumpWatch(u16 address){
-    return mJumpWatches[address] != 0;
+
+bool CWatcher::CheckJumpWatch(u16 address, eWatcherJumpType jumpType){
+    if (mJumpWatches[address] != 0){
+        WatchCallback callback = mJumpCallbacks[address];
+        if (callback != NULL){
+            return (this->*callback)(address) != 0;
+        }
+
+        return GeneralReportJumpWatch(address, jumpType) != 0;
+    }
+
+    return false;
 }
 
-void CWatcher::SetReadWatch(u16 address){
+
+int CWatcher::GeneralReportJumpWatch(u16 address, eWatcherJumpType jumpType){
+    return 0;
+}
+
+
+void CWatcher::SetReadWatch(u16 address, WatchCallback callback){
     mReadWatches[address] = 1;
+    mReadCallbacks[address] = callback;
 }
+
 
 void CWatcher::ClearReadWatch(u16 address){
     mReadWatches[address] = 0;
+    mReadCallbacks[address] = NULL;
 }
+
 
 bool CWatcher::CheckReadWatch(u16 address){
-    return mReadWatches[address] != 0;
+    if (mReadWatches[address] != 0){
+        WatchCallback callback = mReadCallbacks[address];
+        if (callback != NULL){
+            return (this->*callback)(address) != 0;
+        }
+
+        return GeneralReportReadWatch(address) != 0;
+    }
+
+    return false;
 }
 
-void CWatcher::SetWriteWatch(u16 address){
-    mWriteWatches[address] = 1;
+
+int CWatcher::GeneralReportReadWatch(u16 address){
+    return 0;
 }
+
+
+void CWatcher::SetWriteWatch(u16 address, WatchCallback callback){
+    mWriteWatches[address] = 1;
+    mWriteCallbacks[address] = callback;
+}
+
 
 void CWatcher::ClearWriteWatch(u16 address){
     mWriteWatches[address] = 0;
+    mWriteCallbacks[address] = NULL;
 }
 
+
 bool CWatcher::CheckWriteWatch(u16 address){
-    return mWriteWatches[address] != 0;
+    if (mWriteWatches[address] != 0){
+        WatchCallback callback = mWriteCallbacks[address];
+        if (callback != NULL){
+            return (this->*callback)(address) != 0;
+        }
+
+        return GeneralReportWriteWatch(address) != 0;
+    }
+
+    return false;
+}
+
+
+int CWatcher::GeneralReportWriteWatch(u16 address){
+    return 0;
 }
