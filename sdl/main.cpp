@@ -86,7 +86,6 @@ unsigned int SubScreenId;
 bool ShouldPlayIntro = false;
 bool DelayBeforeM2Load = false;
 
-#define WCB_MP_CAST(classname,methodname) ((classname::WatchCallback)&classname::methodname)
 
 class CustomWatcher : public CWatcher
 {

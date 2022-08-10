@@ -15,6 +15,7 @@
 
 #define WATCHER_ADDRESS_SIZE                0x10000
 
+#define WCB_MP_CAST(classname,methodname) ((classname::WatchCallback)&classname::methodname)
 
 typedef enum _eWatcherJumpType{
 	eWatcherJump = 0,
