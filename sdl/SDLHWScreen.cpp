@@ -185,6 +185,13 @@ void SDLHWScreen::DrawScreenLine(unsigned int lineNumber){
 	static u8 pixelColorBuffer[HARDWARE_SPRITE_PIXEL_BUFFER_SIZE];
 	memset(pixelColorBuffer, 0, sizeof(pixelColorBuffer));
 
+	auto bus = CBus::GetInstance();
+	u8 vicControlRegister = bus->PeekDevice(eBusVic, 0xD011);
+	if ((vicControlRegister & 0x10) == 0){
+		// Screen is blanked, so bail out.
+		return;
+	}
+
 	// HARDWARE_SPRITE_TO_SCREEN_X_OFFSET accounts for
 	// border and HBlank to match with screen background.
 	vic->DrawBackgroundRowToBuffer(lineNumber, pixelColorBuffer + HARDWARE_SPRITE_TO_SCREEN_X_OFFSET);
@@ -198,7 +205,6 @@ void SDLHWScreen::DrawScreenLine(unsigned int lineNumber){
 	// Draw sprites.
 	// NOTE: Drawing all of them afterwards ignores the sprite
 	// to background priority VIC setting.
-	auto bus = CBus::GetInstance();
 	u8 spriteEnable = bus->PeekDevice(eBusVic, 0xD015);
 	if (spriteEnable != 0){
 		// Process sprites in reverse order to account for sprite priority.
