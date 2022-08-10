@@ -36,12 +36,17 @@ extern void MainLoop(void);
 #define M1_InitialGameDifficulty               0xe504
 
 #define M2_JumpToGameInitialize                0x4000
+#define M2_AddMessage                          0x437b
 #define M2_GameInitialize                      0x972b
 #define M2_DoRound                             0x9771
 
 #define M2_RoundNumber                         0x0048
 #define M2_UnmappedIoSpaceStart                0xdf12
 
+#define MX_MessageColor                        0x0027
+#define MX_MessageFont                         0x009e
+#define MX_MessageXPos                         0x00b1
+#define MX_MessageYPos                         0x00b7
 #define MX_PlayerInputType                     0xe500
 #define MX_PlayerColor                         0xe505
 #define MX_PlayerSpecies                       0xe509
@@ -104,6 +109,54 @@ class CustomWatcher : public CWatcher
 		{
 			M1_LoadAndBootM2();
 			return 1;
+		}
+		else if (address == M2_AddMessage)
+		{
+			auto bus = CBus::GetInstance();
+			u8 messageXPos = bus->Peek(MX_MessageXPos);
+			u8 messageYPos = bus->Peek(MX_MessageYPos);
+			u8 messageFont = bus->Peek(MX_MessageFont);
+			u8 messageColor = bus->Peek(MX_MessageColor);
+
+			cout << "AddMessage: ";
+			cout << "(" << int(messageXPos) << "," << int(messageYPos) << ")";
+			cout << "[F:" << int(messageFont) << " " << "C:" << int(messageColor) << "]";
+			cout << endl;
+
+			auto cpu = cbm64->GetCpu();
+			u8 aReg = cpu->GetA();
+			u8 yReg = cpu->GetY();
+			u16 stringAddress = aReg | ((u16)yReg << 8);
+
+			bool terminator;
+			u8 character;
+			do
+			{
+				character = bus->Peek(stringAddress++);
+
+				// Decode character code.
+				terminator = (character & 0x80) == 0;
+				character = char(character & ~0x80);
+
+				if (character < 32)
+				{
+					if (character == '\r')
+					{
+						cout << endl;
+						continue;
+					}
+
+					cout << "[" << int(character) << "]";
+					continue;
+				}
+
+				cout << character;
+			}
+			while(!terminator);
+
+			cout << endl;
+
+			return 0;
 		}
 
 		cout << "Watcher Jump: " << std::hex << int(address) << std::dec << endl;
@@ -313,6 +366,8 @@ proceedToM2:
 
 	//SetWriteWatch(M2_RoundNumber);
 	//SetWriteWatch(M2_UnmappedIoSpaceStart);
+
+	watcher->SetJumpWatch(M2_AddMessage);
 
 	auto vic = cbm64->GetVic();
 	vic->Poke(0xD011, vic->Peek(0xD011) & ~0x10);
