@@ -91,7 +91,7 @@ class CustomWatcher : public CWatcher
     public:
 	protected:
 	
-	virtual int ReportAddressWatch(u16 address)
+	virtual int GeneralReportAddressWatch(u16 address)
 	{
 		if (address == M1_InitializeOver)
 		{
@@ -206,7 +206,7 @@ class CustomWatcher : public CWatcher
 		return 0;
 	};
 
-	virtual int ReportJumpWatch(u16 address, eWatcherJumpType jumpType)
+	virtual int GeneralReportJumpWatch(u16 address, eWatcherJumpType jumpType)
 	{
 		if (address == M1_ProcessSettingsOver)
 		{
@@ -267,12 +267,14 @@ class CustomWatcher : public CWatcher
 		return 0;
 	};
 
-	virtual void ReportReadWatch(u16 address)
+	virtual int GeneralReportReadWatch(u16 address)
 	{
 		cout << "Watcher Read: " << std::hex << int(address) << std::dec << endl;
+
+		return 0;
 	}
 
-	virtual void ReportWriteWatch(u16 address)
+	virtual int GeneralReportWriteWatch(u16 address)
 	{
 		/*if (address == M2_RoundNumber)
 		{
@@ -292,6 +294,8 @@ class CustomWatcher : public CWatcher
 		}*/
 
 		cout << "Watcher Write: " << std::hex << int(address) << std::dec << endl;
+
+		return 0;
 	}
 
     private:

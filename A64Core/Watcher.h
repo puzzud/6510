@@ -12,43 +12,57 @@
 
 #include "Common.h"
 
+
+#define WATCHER_ADDRESS_SIZE                0x10000
+
+
 typedef enum _eWatcherJumpType{
 	eWatcherJump = 0,
 	eWatcherJumpRoutine,
 	eWatcherJumpInterrupt
 }eWatcherJumpType;
 
+
 class CWatcher{
+	using WatchCallback = int (CWatcher::*)(u16 address);
+
 private:
 	// NOTE: Address watches limited to instruction fetch addresses.
-	u8 mAddressWatches[0x10000];
-	u8 mJumpWatches[0x10000];
-	u8 mReadWatches[0x10000];
-	u8 mWriteWatches[0x10000];
+	u8 mAddressWatches[WATCHER_ADDRESS_SIZE];
+	WatchCallback mAddressCallbacks[WATCHER_ADDRESS_SIZE];
+
+	u8 mJumpWatches[WATCHER_ADDRESS_SIZE];
+	WatchCallback mJumpCallbacks[WATCHER_ADDRESS_SIZE];
+
+	u8 mReadWatches[WATCHER_ADDRESS_SIZE];
+	WatchCallback mReadCallbacks[WATCHER_ADDRESS_SIZE];
+
+	u8 mWriteWatches[WATCHER_ADDRESS_SIZE];
+	WatchCallback mWriteCallbacks[WATCHER_ADDRESS_SIZE];
 protected:
 public:
 	CWatcher();
 	~CWatcher();
 
-	void SetAddressWatch(u16 address);
+	void SetAddressWatch(u16 address, WatchCallback callback = NULL);
 	void ClearAddressWatch(u16 address);
 	bool CheckAddressWatch(u16 address);
-	virtual int ReportAddressWatch(u16 address) = 0;
+	virtual int GeneralReportAddressWatch(u16 address);
 
-	void SetJumpWatch(u16 address);
+	void SetJumpWatch(u16 address, WatchCallback callback = NULL);
 	void ClearJumpWatch(u16 address);
-	bool CheckJumpWatch(u16 address);
-	virtual int ReportJumpWatch(u16 address, eWatcherJumpType jumpType) = 0;
+	bool CheckJumpWatch(u16 address, eWatcherJumpType jumpType);
+	virtual int GeneralReportJumpWatch(u16 address, eWatcherJumpType jumpType);
 
-	void SetReadWatch(u16 address);
+	void SetReadWatch(u16 address, WatchCallback callback = NULL);
 	void ClearReadWatch(u16 address);
 	bool CheckReadWatch(u16 address);
-	virtual void ReportReadWatch(u16 address) = 0;
+	virtual int GeneralReportReadWatch(u16 address);
 
-	void SetWriteWatch(u16 address);
+	void SetWriteWatch(u16 address, WatchCallback callback = NULL);
 	void ClearWriteWatch(u16 address);
 	bool CheckWriteWatch(u16 address);
-	virtual void ReportWriteWatch(u16 address) = 0;
+	virtual int GeneralReportWriteWatch(u16 address);
 };
 
 #endif //WATCHER_H
