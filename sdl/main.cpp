@@ -65,6 +65,8 @@ CBM64Main* cbm64 = NULL;
 CustomWatcher* watcher = NULL;
 
 unsigned int CurrentModuleId;
+bool ShouldPlayIntro = false;
+bool DelayBeforeM2Load = false;
 
 class CustomWatcher : public CWatcher
 {
@@ -187,8 +189,7 @@ void BootM1()
 	// Set jump watch for right before loading M from disk.
 	watcher->SetJumpWatch(M1_ProcessSettingsOver);
 
-	const bool shouldPlayIntro = false;
-	if (shouldPlayIntro)
+	if (ShouldPlayIntro)
 	{
 		cbm64->GetCpu()->SetPC(M1_JumpToInitializeIntro);
 	}
@@ -277,6 +278,23 @@ void M1_ApplySettingsAndJumpToDataCopy()
 
 void M1_LoadAndBootM2()
 {
+	if (DelayBeforeM2Load)
+	{
+		u16 rasterLineNumber = cbm64->GetVic()->Peek(0xD012) | ((cbm64->GetVic()->Peek(0xD011) & 0x80) << 8);
+		if (rasterLineNumber > 256)
+		{
+			int static timer = 10000;
+			while (--timer == 0)
+			{
+				goto proceedToM2;
+			}
+		}
+
+		cbm64->GetCpu()->SetPC(0x653A-3);
+		return;
+	}
+
+proceedToM2:
 	if (cbm64->LoadAppWithoutBasic("/home/puzzud/temp/Desktop/m") != 0)
 	{
 		cout << "Failed to load M2" << endl;
@@ -295,6 +313,9 @@ void M1_LoadAndBootM2()
 
 	//SetWriteWatch(M2_RoundNumber);
 	//SetWriteWatch(M2_UnmappedIoSpaceStart);
+
+	auto vic = cbm64->GetVic();
+	vic->Poke(0xD011, vic->Peek(0xD011) & ~0x10);
 }
 
 void MX_SetPlayerInputType(unsigned int playerIndex, u8 playerInputType)
