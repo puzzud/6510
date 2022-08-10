@@ -24,6 +24,7 @@ typedef enum _eWatcherJumpType{
 
 
 class CWatcher{
+public:
 	using WatchCallback = int (CWatcher::*)(u16 address);
 
 private:
