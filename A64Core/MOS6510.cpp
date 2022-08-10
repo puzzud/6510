@@ -619,6 +619,21 @@ bool CMOS6510::GetOperandAddress(u8 addressMode, u16* address){
 }
 
 
+u8 CMOS6510::GetA(){
+	return r_a;
+}
+
+
+u8 CMOS6510::GetX(){
+	return r_x;
+}
+
+
+u8 CMOS6510::GetY(){
+	return r_y;
+}
+
+
 u16 CMOS6510::GetPC(){
 	return r_pc;
 }

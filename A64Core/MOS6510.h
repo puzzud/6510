@@ -226,6 +226,10 @@ public:
 	void Push16(u16);
 	u8 Pop();
 	u16 Pop16();
+	//Registers
+	u8 GetA();
+	u8 GetX();
+	u8 GetY();
 	//PC	
 	u16 GetPC();
 	void SetPC(u16 address);
