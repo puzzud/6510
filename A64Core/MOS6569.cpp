@@ -35,6 +35,8 @@ CMOS6569::CMOS6569(){
 
 	mBus = CBus::GetInstance(); 
 	mBus->Register(eBusVic, this, 0xD000, 0xD3FF);
+
+	mRenderer = NULL;
 }
 
 void CMOS6569::SetChar(u16 address, u8 c){
