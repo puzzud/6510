@@ -96,10 +96,7 @@ endif(SDL)
 # Static libraries
 add_library(A64Core STATIC
     ${CORE_SRC}
-)
-
-add_library(${PROJECT_NAME} STATIC
-    ${SRC}
+    ${ROMS_COMMAND}
 )
 
 # ROMs
@@ -118,8 +115,9 @@ else()
 endif(EMBEDDED_ROMS)
 
 # Executable
-add_executable(
-    ${PROJECT_NAME}_exe
+add_executable(${PROJECT_NAME}
+    ${CORE_SRC}
+    ${SRC}
     ${MAIN_SRC}
     ${ROMS_COMMAND}
 )
@@ -172,7 +170,5 @@ endif(SDL)
 include_directories(${PROJECT_INCLUDE_DIRECTORIES})
 
 target_link_libraries(A64Core PRIVATE ${CORE_TARGET_LIBRARIES})
-target_link_libraries(${PROJECT_NAME} PRIVATE ${PROJECT_TARGET_LIBRARIES})
-target_link_libraries(${PROJECT_NAME}_exe PRIVATE ${PROJECT_NAME} ${PROJECT_TARGET_LIBRARIES})
+target_link_libraries(${PROJECT_NAME} PRIVATE ${CORE_TARGET_LIBRARIES} ${PROJECT_TARGET_LIBRARIES})
 
-set_target_properties(${PROJECT_NAME}_exe PROPERTIES OUTPUT_NAME ${PROJECT_NAME})
