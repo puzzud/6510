@@ -38,8 +38,6 @@ CMOS6526CIA1::CMOS6526CIA1(BKE_MUTEX mutex){
 	timerAIrqEnabled = false;
 
 	prevIrqTime = getTimeNow();
-
-	mController = NULL;
 }
 
 CMOS6526CIA1::~CMOS6526CIA1(){
