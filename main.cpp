@@ -184,7 +184,7 @@ bool isKeystroke(std::vector<char>& keystroke, const std::vector<char>& k) {
     if (k.size() != keystroke.size()) {
         return false;
     }
-    for (int x=0; x<keystroke.size(); x++) {
+    for (unsigned int x=0; x<keystroke.size(); x++) {
         if (keystroke[x] != k[x]) {
             return false;
         }
