@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.10.0)
 
-set(CMAKE_CXX_FLAGS_DEBUG "-Wall -g")
-set(CMAKE_CXX_FLAGS_RELEASE "-O3")
+set(CMAKE_CXX_FLAGS_DEBUG "-fPIC -Wall -g")
+set(CMAKE_CXX_FLAGS_RELEASE "-fPIC -O3")
 #set(CMAKE_CXX_FLAGS -pthread)
 
 # Options
