@@ -17,7 +17,7 @@
 CRom::CRom(uint64_t size):CDevice(){
 	this->size = size;
 	mRom = new u8[size];
-	memset(mRom, size, 0);
+	memset(mRom, 0, size);
 }
 
 
