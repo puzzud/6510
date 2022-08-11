@@ -241,7 +241,7 @@ void CBM64Main::SetupPostKernalConfig(){
 		14,6,1,2,3,4,0,1,2,3,4,5,6,7
 	};
 
-	for (int i = 0; i < sizeof(vicInitValues); ++i){
+	for (unsigned int i = 0; i < sizeof(vicInitValues); ++i){
 		mVic->Peek(0xD000+i);
 	}
 
