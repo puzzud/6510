@@ -39,12 +39,6 @@ protected:
 
 	void SetColorValuesFromInt(SDL_Color* color, unsigned int value);
 
-	// mode parameter indicates character or sprite mode,
-	// because of the discrepancy between how bit pairs
-	// map to color values respectively.
-	//  - 0: Character
-	//  - 1: Sprite
-	void DrawByte(u8 byte, u8* colorCodes, u16 screenXPosition, u8 screenYPosition, eByteRenderMode mode, bool multiColor, unsigned int horizontalScale);
 	void DrawBufferOnLine(u16 screenXPosition, u8 screenYPosition, u8* pixelColorBuffer, unsigned int numberOfPixels);
 	void DrawScreenLine(unsigned int lineNumber);
 };

@@ -130,6 +130,8 @@ class CMOS6569 : public CDevice{
 		// for collision purposes.
 		u8 backgroundFieldLinePixelColorBuffer[HARDWARE_SPRITE_PIXEL_BUFFER_SIZE];
 	protected:
+		void RenderFieldLinePixelColorBuffers();
+		void TestSpriteCollision();
 	public:
 		CMOS6569();
 		virtual ~CMOS6569(){}
@@ -159,7 +161,6 @@ class CMOS6569 : public CDevice{
 		u16 GetSpriteDataMemoryOffset(unsigned int spriteIndex);
 		u8 GetSpriteColor(unsigned int spriteIndex);
 		bool IsSpriteMultiColor(unsigned int spriteIndex);
-		void TestSpriteCollision();
 
 		void SetChar(u16 address, u8 c); //temp
 		
@@ -170,6 +171,12 @@ class CMOS6569 : public CDevice{
 		void DrawByteToBuffer(u8 byte, u8* pixelColorBuffer, u8* colorCodes, eByteRenderMode mode, bool multiColor, unsigned int horizontalScale = 1);
 		void DrawBackgroundRowToBuffer(unsigned int fieldLineNumber, u8* pixelColorBuffer);
 		void DrawSpriteRowToBuffer(unsigned int spriteIndex, unsigned int rowIndex, u8* pixelColorBuffer);
+
+		// This method takes all the background & sprite field line pixel color
+		// buffers and renders them together, taking into account sprite priority
+		// over other sprites and background graphics. This method should not be
+		// called internally, as it is purely graphical.
+		void RenderGraphicsToBuffer(u8* pixelColorBuffer);
 };
 
 

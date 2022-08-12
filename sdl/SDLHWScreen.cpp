@@ -123,19 +123,6 @@ void SDLHWScreen::SetColorValuesFromInt(SDL_Color* color, unsigned int value){
 }
 
 
-// mode parameter indicates character or sprite mode,
-// because of the discrepancy between how bit pairs
-// map to color values respectively.
-//  - 0: Character
-//  - 1: Sprite
-void SDLHWScreen::DrawByte(u8 byte, u8* colorCodes, u16 screenXPosition, u8 screenYPosition, eByteRenderMode mode, bool multiColor, unsigned int horizontalScale){
-	static u8 pixelColorBuffer[16];  // 16 bytes in case of horizontal scaling.
-	memset(pixelColorBuffer, 0, sizeof(pixelColorBuffer));
-	vic->DrawByteToBuffer(byte, pixelColorBuffer, colorCodes, mode, multiColor, horizontalScale);
-	DrawBufferOnLine(screenXPosition, screenYPosition, pixelColorBuffer, 8 * horizontalScale);
-}
-
-
 void SDLHWScreen::DrawBufferOnLine(u16 screenXPosition, u8 screenYPosition, u8* pixelColorBuffer, unsigned int numberOfPixels){
 	// Draw to renderer from pixel buffers.
 	SDL_Rect rect;
@@ -181,49 +168,17 @@ void SDLHWScreen::DrawScreenLine(unsigned int lineNumber){
 	SDL_SetRenderDrawColor(Renderer, backgroundColor->r, backgroundColor->g, backgroundColor->b, backgroundColor->a);
 	SDL_RenderFillRect(Renderer, &rect);
 
-	// Draw background.
+	// Graphics over background color.
 	static u8 pixelColorBuffer[HARDWARE_SPRITE_PIXEL_BUFFER_SIZE];
 	memset(pixelColorBuffer, 0, sizeof(pixelColorBuffer));
 
+	vic->RenderGraphicsToBuffer(pixelColorBuffer);
+	
 	// HARDWARE_SPRITE_TO_SCREEN_X_OFFSET accounts for
 	// border and HBlank to match with screen background.
-	vic->DrawBackgroundRowToBuffer(lineNumber, pixelColorBuffer + HARDWARE_SPRITE_TO_SCREEN_X_OFFSET);
-				
 	DrawBufferOnLine(
 		0,
 		screenLineNumber,
 		pixelColorBuffer + HARDWARE_SPRITE_TO_SCREEN_X_OFFSET,
 		SCREEN_WIDTH);
-
-	// Draw sprites.
-	// NOTE: Drawing all of them afterwards ignores the sprite
-	// to background priority VIC setting.
-	auto bus = CBus::GetInstance();
-	u8 spriteEnable = bus->PeekDevice(eBusVic, 0xD015);
-	if (spriteEnable != 0){
-		// Process sprites in reverse order to account for sprite priority.
-		for (int spriteIndex = NUMBER_OF_HARDWARE_SPRITES - 1; spriteIndex > -1; --spriteIndex){
-			if (!vic->IsSpriteEnabled(spriteIndex)){
-				continue;
-			}
-
-			if (vic->IsSpriteOnLine(spriteIndex, lineNumber)){
-				u8 spriteYPosition = vic->GetSpriteYPosition(spriteIndex);
-				u8 spriteRowOffset = (lineNumber - spriteYPosition) / vic->GetSpriteVerticalScale(spriteIndex);
-
-				// 48 bytes in case of horizontal scaling.
-				static u8 pixelColorBuffer[HARDWARE_SPRITE_WIDTH * 2];
-				memset(pixelColorBuffer, 0, sizeof(pixelColorBuffer));
-				
-				vic->DrawSpriteRowToBuffer(spriteIndex, spriteRowOffset, pixelColorBuffer);
-				
-				// Adjust X for border and HBlank to match with background.
-				DrawBufferOnLine(
-					vic->GetSpriteXPosition(spriteIndex) - HARDWARE_SPRITE_TO_SCREEN_X_OFFSET,
-					screenLineNumber,
-					pixelColorBuffer,
-					vic->GetSpriteWidth(spriteIndex));
-			}
-		}
-	}
 }

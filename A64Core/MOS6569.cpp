@@ -51,6 +51,7 @@ void CMOS6569::Cycle(){
 	if (++perLineClockCycle == NTSC_FIELD_CYCLES_PER_LINE){
 		perLineClockCycle = 0;
 
+		RenderFieldLinePixelColorBuffers(); // Must be called before TestSpriteCollision.
 		TestSpriteCollision();
 
 		if (mRenderer != NULL){
@@ -60,8 +61,7 @@ void CMOS6569::Cycle(){
 		if (++rasterLine == NTSC_FIELD_LINE_HEIGHT + 1){
 			rasterLine = 0;
 		}
-
-		// TODO: Should this be called here or at a different point in time?
+		
 		if (rasterLine == rasterLineCompare){
 			mRegs[0xD019 - 0xD000] |= 0x81; // Mark possible interrupt flags.
 		}
@@ -240,7 +240,7 @@ bool CMOS6569::IsSpriteMultiColor(unsigned int spriteIndex){
 }
 
 
-void CMOS6569::TestSpriteCollision(){
+void CMOS6569::RenderFieldLinePixelColorBuffers(){
 	memset(backgroundFieldLinePixelColorBuffer, 0, sizeof(backgroundFieldLinePixelColorBuffer));
 
 	memset(spriteFieldLinePixelColorBuffers, 0,
@@ -271,8 +271,11 @@ void CMOS6569::TestSpriteCollision(){
 			spriteRowIndex,
 			spriteFieldLinePixelColorBuffer + GetSpriteXPosition(spriteIndex));
 	}
+}
 
-	// Actually check & retain collisions.
+
+void CMOS6569::TestSpriteCollision(){
+	// Check & retain collisions.
 	u8 spriteSpriteCollisions = mRegs[0xD01E - 0xD000];
 	u8 spriteBackgroundCollisions = mRegs[0xD01F - 0xD000];
 
@@ -489,5 +492,57 @@ void CMOS6569::DrawSpriteRowToBuffer(unsigned int spriteIndex, unsigned int rowI
 			spriteHorizontalScale);
 		
 		pixelColorBuffer += (spriteHorizontalScale * 8); // NOTE: Mutates function argument.
+	}
+}
+
+
+void CMOS6569::RenderGraphicsToBuffer(u8* pixelColorBuffer){
+	if ((mRegs[0xD011-0xD000] & 0x10) == 0){
+		// Screen is blanked, so bail out.
+		return;
+	}
+	
+	// TODO: Clamp to bounds of these buffers (add method arguments to control offset and length),
+	// in order to prevent overflow; also will facilitate if buffer is ever
+	// processed in 8 bits at a time per clock.
+	u8 spritePriority = mRegs[0xD01B-0xD000];
+	static bool spriteGivesBackgroundPriority[NUMBER_OF_HARDWARE_SPRITES];
+	for (int spriteIndex = 0; spriteIndex < NUMBER_OF_HARDWARE_SPRITES; ++spriteIndex){
+		spriteGivesBackgroundPriority[spriteIndex] = ((1 << spriteIndex) & spritePriority) != 0;
+	}
+
+	// Cycle through each pixel.
+	for (unsigned int x = 0; x < HARDWARE_SPRITE_PIXEL_BUFFER_SIZE; ++x){
+		
+		// Cycle through each sprite, ascending.
+		for (int spriteIndex = 0; spriteIndex < NUMBER_OF_HARDWARE_SPRITES; ++spriteIndex){
+			// Check this sprite's pixel.
+			u8 spritePixelColor = spriteFieldLinePixelColorBuffers[spriteIndex][x];
+			if (spritePixelColor != 0){
+				// Sprite pixel is opaque.
+
+				if (spriteGivesBackgroundPriority[spriteIndex] && backgroundFieldLinePixelColorBuffer[x] != 0){
+					// Sprite gives priority to an opaque background graphic;
+					// that's what gets rendered.
+					pixelColorBuffer[x] = backgroundFieldLinePixelColorBuffer[x];
+				}else{
+					// Just draw this sprite's pixel.
+					pixelColorBuffer[x] = spritePixelColor;
+				}
+
+				// In either case, a pixel has been rendered;
+				// go to next pixel.
+				break;
+			}
+
+			// Sprite pixel is transparent, check next sprite "below it".
+			if (spriteIndex == (NUMBER_OF_HARDWARE_SPRITES - 1)){
+				// Unless it's the last sprite; in which case,
+				// copy over an opaque background graphics pixel.
+				if (backgroundFieldLinePixelColorBuffer[x] != 0){
+					pixelColorBuffer[x] = backgroundFieldLinePixelColorBuffer[x];
+				}
+			}
+		}
 	}
 }
