@@ -51,6 +51,7 @@ void CMOS6569::Cycle(){
 	if (++perLineClockCycle == NTSC_FIELD_CYCLES_PER_LINE){
 		perLineClockCycle = 0;
 
+		RenderFieldLinePixelColorBuffers(); // Must be called before TestSpriteCollision.
 		TestSpriteCollision();
 
 		if (mRenderer != NULL){
@@ -60,8 +61,7 @@ void CMOS6569::Cycle(){
 		if (++rasterLine == NTSC_FIELD_LINE_HEIGHT + 1){
 			rasterLine = 0;
 		}
-
-		// TODO: Should this be called here or at a different point in time?
+		
 		if (rasterLine == rasterLineCompare){
 			mRegs[0xD019 - 0xD000] |= 0x81; // Mark possible interrupt flags.
 		}
@@ -240,7 +240,7 @@ bool CMOS6569::IsSpriteMultiColor(unsigned int spriteIndex){
 }
 
 
-void CMOS6569::TestSpriteCollision(){
+void CMOS6569::RenderFieldLinePixelColorBuffers(){
 	memset(backgroundFieldLinePixelColorBuffer, 0, sizeof(backgroundFieldLinePixelColorBuffer));
 
 	memset(spriteFieldLinePixelColorBuffers, 0,
@@ -271,8 +271,11 @@ void CMOS6569::TestSpriteCollision(){
 			spriteRowIndex,
 			spriteFieldLinePixelColorBuffer + GetSpriteXPosition(spriteIndex));
 	}
+}
 
-	// Actually check & retain collisions.
+
+void CMOS6569::TestSpriteCollision(){
+	// Check & retain collisions.
 	u8 spriteSpriteCollisions = mRegs[0xD01E - 0xD000];
 	u8 spriteBackgroundCollisions = mRegs[0xD01F - 0xD000];
 

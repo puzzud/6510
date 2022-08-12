@@ -130,6 +130,7 @@ class CMOS6569 : public CDevice{
 		// for collision purposes.
 		u8 backgroundFieldLinePixelColorBuffer[HARDWARE_SPRITE_PIXEL_BUFFER_SIZE];
 	protected:
+		void RenderFieldLinePixelColorBuffers();
 		void TestSpriteCollision();
 	public:
 		CMOS6569();
