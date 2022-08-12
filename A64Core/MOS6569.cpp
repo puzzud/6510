@@ -505,6 +505,11 @@ void CMOS6569::RenderGraphicsToBuffer(u8* pixelColorBuffer){
 	// TODO: Clamp to bounds of these buffers (add method arguments to control offset and length),
 	// in order to prevent overflow; also will facilitate if buffer is ever
 	// processed in 8 bits at a time per clock.
+	u8 spritePriority = mRegs[0xD01B-0xD000];
+	static bool spriteGivesBackgroundPriority[NUMBER_OF_HARDWARE_SPRITES];
+	for (int spriteIndex = 0; spriteIndex < NUMBER_OF_HARDWARE_SPRITES; ++spriteIndex){
+		spriteGivesBackgroundPriority[spriteIndex] = ((1 << spriteIndex) & spritePriority) != 0;
+	}
 
 	// Cycle through each pixel.
 	for (unsigned int x = 0; x < HARDWARE_SPRITE_PIXEL_BUFFER_SIZE; ++x){
@@ -516,8 +521,7 @@ void CMOS6569::RenderGraphicsToBuffer(u8* pixelColorBuffer){
 			if (spritePixelColor != 0){
 				// Sprite pixel is opaque.
 
-				bool spriteGivesBackgroundPriority = false;
-				if (spriteGivesBackgroundPriority && backgroundFieldLinePixelColorBuffer[x] != 0){
+				if (spriteGivesBackgroundPriority[spriteIndex] && backgroundFieldLinePixelColorBuffer[x] != 0){
 					// Sprite gives priority to an opaque background graphic;
 					// that's what gets rendered.
 					pixelColorBuffer[x] = backgroundFieldLinePixelColorBuffer[x];
