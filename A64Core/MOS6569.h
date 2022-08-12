@@ -76,6 +76,7 @@ typedef enum
 
 typedef enum _eByteRenderMode{
 	eByteRenderModeCharacter,
+	eByteRenderModeCharacterCollision,
 	eByteRenderModeSprite
 }eByteRenderMode;
 
@@ -121,13 +122,13 @@ class CMOS6569 : public CDevice{
 		u8 spriteFieldLinePixelColorBuffers[NUMBER_OF_HARDWARE_SPRITES][HARDWARE_SPRITE_PIXEL_BUFFER_SIZE];
 		
 		// Used for determine sprite to background collisions.
-		// TODO: Also maybe used in future to actually render backgrounds
-		// (with proper sprite priority).
 		// Note that each line is the same length as
 		// spriteFieldLinePixelColorBuffers.
 		// Note that background colors (especially in case of extended color mode),
-		// are not rendered to preserve transparency
-		// for collision purposes.
+		// are not rendered to preserve transparency for collision purposes.
+		// Note that multicolor bit pair 01 is represented with transparency,
+		// to facilitate how collision detection, meaning this buffer
+		// cannot be used directly for rendering.
 		u8 backgroundFieldLinePixelColorBuffer[HARDWARE_SPRITE_PIXEL_BUFFER_SIZE];
 	protected:
 		void RenderFieldLinePixelColorBuffers();
@@ -169,7 +170,7 @@ class CMOS6569 : public CDevice{
 		void HWNeedsRedraw();
 
 		void DrawByteToBuffer(u8 byte, u8* pixelColorBuffer, u8* colorCodes, eByteRenderMode mode, bool multiColor, unsigned int horizontalScale = 1);
-		void DrawBackgroundRowToBuffer(unsigned int fieldLineNumber, u8* pixelColorBuffer);
+		void DrawBackgroundRowToBuffer(unsigned int fieldLineNumber, eByteRenderMode mode, u8* pixelColorBuffer);
 		void DrawSpriteRowToBuffer(unsigned int spriteIndex, unsigned int rowIndex, u8* pixelColorBuffer);
 
 		// This method takes all the background & sprite field line pixel color
