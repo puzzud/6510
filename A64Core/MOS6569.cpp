@@ -491,3 +491,46 @@ void CMOS6569::DrawSpriteRowToBuffer(unsigned int spriteIndex, unsigned int rowI
 		pixelColorBuffer += (spriteHorizontalScale * 8); // NOTE: Mutates function argument.
 	}
 }
+
+
+void CMOS6569::RenderGraphicsToBuffer(u8* pixelColorBuffer){
+	// TODO: Clamp to bounds of these buffers (add method arguments to control offset and length),
+	// in order to prevent overflow; also will facilitate if buffer is ever
+	// processed in 8 bits at a time per clock.
+
+	// Cycle through each pixel.
+	for (unsigned int x = 0; x < HARDWARE_SPRITE_PIXEL_BUFFER_SIZE; ++x){
+		
+		// Cycle through each sprite, ascending.
+		for (int spriteIndex = 0; spriteIndex < NUMBER_OF_HARDWARE_SPRITES; ++spriteIndex){
+			// Check this sprite's pixel.
+			u8 spritePixelColor = spriteFieldLinePixelColorBuffers[spriteIndex][x];
+			if (spritePixelColor != 0){
+				// Sprite pixel is opaque.
+
+				bool spriteGivesBackgroundPriority = false;
+				if (spriteGivesBackgroundPriority && backgroundFieldLinePixelColorBuffer[x] != 0){
+					// Sprite gives priority to an opaque background graphic;
+					// that's what gets rendered.
+					pixelColorBuffer[x] = backgroundFieldLinePixelColorBuffer[x];
+				}else{
+					// Just draw this sprite's pixel.
+					pixelColorBuffer[x] = spritePixelColor;
+				}
+
+				// In either case, a pixel has been rendered;
+				// go to next pixel.
+				break;
+			}
+
+			// Sprite pixel is transparent, check next sprite "below it".
+			if (spriteIndex == (NUMBER_OF_HARDWARE_SPRITES - 1)){
+				// Unless it's the last sprite; in which case,
+				// copy over an opaque background graphics pixel.
+				if (backgroundFieldLinePixelColorBuffer[x] != 0){
+					pixelColorBuffer[x] = backgroundFieldLinePixelColorBuffer[x];
+				}
+			}
+		}
+	}
+}
