@@ -248,7 +248,7 @@ void CMOS6569::RenderFieldLinePixelColorBuffers(){
 
 	// HARDWARE_SPRITE_TO_SCREEN_X_OFFSET accounts for
 	// border and HBlank to match with screen background.
-	DrawBackgroundRowToBuffer(rasterLine,
+	DrawBackgroundRowToBuffer(rasterLine, eByteRenderModeCharacterCollision,
 		backgroundFieldLinePixelColorBuffer + HARDWARE_SPRITE_TO_SCREEN_X_OFFSET);
 
 	for (int spriteIndex = 0; spriteIndex < NUMBER_OF_HARDWARE_SPRITES; ++spriteIndex){
@@ -363,7 +363,7 @@ void CMOS6569::DrawByteToBuffer(u8 byte, u8* pixelColorBuffer, u8* colorCodes, e
 	memcpy(adjustedColorCodes, colorCodes, 3);
 
 	// Determine character multicolor mode behavior based on byte.
-	if (mode == eByteRenderModeCharacter)
+	if (mode == eByteRenderModeCharacter || mode == eByteRenderModeCharacterCollision)
 	{
 		if (multiColor)
 		{
@@ -384,7 +384,7 @@ void CMOS6569::DrawByteToBuffer(u8 byte, u8* pixelColorBuffer, u8* colorCodes, e
 	// This variable is an attempt to help normalize
 	// the order of colors provided by colorCodes.
 	u8 singleColorCode =
-		(mode == eByteRenderModeCharacter) ? adjustedColorCodes[2] : adjustedColorCodes[1];
+		(mode == eByteRenderModeSprite) ? adjustedColorCodes[1] : adjustedColorCodes[2];
 
 	unsigned int bufferIndex = (8 * horizontalScale) - 1;
 
@@ -392,7 +392,8 @@ void CMOS6569::DrawByteToBuffer(u8 byte, u8* pixelColorBuffer, u8* colorCodes, e
 	{
 		u8 bitPair = byte & 0x03;
 
-		if (bitPair == 0)
+		if (bitPair == 0 ||
+			(mode == eByteRenderModeCharacterCollision && bitPair == 0x01)) // Bit pair 01 with multicolor character.
 		{
 			bufferIndex -= 2 * horizontalScale;
 			continue;
@@ -421,7 +422,7 @@ void CMOS6569::DrawByteToBuffer(u8 byte, u8* pixelColorBuffer, u8* colorCodes, e
 }
 
 
-void CMOS6569::DrawBackgroundRowToBuffer(unsigned int fieldLineNumber, u8* pixelColorBuffer){
+void CMOS6569::DrawBackgroundRowToBuffer(unsigned int fieldLineNumber, eByteRenderMode mode, u8* pixelColorBuffer){
 	u16 vicMemoryBankStartAddress = mBus->GetVicMemoryBankStartAddress();
 	u16 vicScreenMemoryStartAddress = vicMemoryBankStartAddress + GetScreenMemoryOffset();
 	u16 vicCharacterMemoryStartAddress = vicMemoryBankStartAddress + GetCharacterMemoryOffset();
@@ -455,7 +456,7 @@ void CMOS6569::DrawBackgroundRowToBuffer(unsigned int fieldLineNumber, u8* pixel
 			charRowByte,
 			pixelColorBuffer,
 			colorCodes,
-			eByteRenderModeCharacter,
+			mode,
 			multiColorCharacters);
 		
 		pixelColorBuffer += 8; // NOTE: Mutates function argument.
@@ -501,6 +502,14 @@ void CMOS6569::RenderGraphicsToBuffer(u8* pixelColorBuffer){
 		// Screen is blanked, so bail out.
 		return;
 	}
+
+	// Fully render background (no multicolor collision provision).
+	// HARDWARE_SPRITE_TO_SCREEN_X_OFFSET accounts for
+	// border and HBlank to match with screen background.
+	static u8 renderBackgroundFieldLinePixelColorBuffer[HARDWARE_SPRITE_PIXEL_BUFFER_SIZE];
+	memset(renderBackgroundFieldLinePixelColorBuffer, 0, HARDWARE_SPRITE_PIXEL_BUFFER_SIZE);
+	DrawBackgroundRowToBuffer(rasterLine, eByteRenderModeCharacter,
+		renderBackgroundFieldLinePixelColorBuffer + HARDWARE_SPRITE_TO_SCREEN_X_OFFSET);
 	
 	// TODO: Clamp to bounds of these buffers (add method arguments to control offset and length),
 	// in order to prevent overflow; also will facilitate if buffer is ever
@@ -524,6 +533,7 @@ void CMOS6569::RenderGraphicsToBuffer(u8* pixelColorBuffer){
 				if (spriteGivesBackgroundPriority[spriteIndex] && backgroundFieldLinePixelColorBuffer[x] != 0){
 					// Sprite gives priority to an opaque background graphic;
 					// that's what gets rendered.
+					// NOTE: Using collision based background field buffer.
 					pixelColorBuffer[x] = backgroundFieldLinePixelColorBuffer[x];
 				}else{
 					// Just draw this sprite's pixel.
@@ -539,8 +549,9 @@ void CMOS6569::RenderGraphicsToBuffer(u8* pixelColorBuffer){
 			if (spriteIndex == (NUMBER_OF_HARDWARE_SPRITES - 1)){
 				// Unless it's the last sprite; in which case,
 				// copy over an opaque background graphics pixel.
-				if (backgroundFieldLinePixelColorBuffer[x] != 0){
-					pixelColorBuffer[x] = backgroundFieldLinePixelColorBuffer[x];
+				// NOTE: Uses fully rendered background graphics.
+				if (renderBackgroundFieldLinePixelColorBuffer[x] != 0){
+					pixelColorBuffer[x] = renderBackgroundFieldLinePixelColorBuffer[x];
 				}
 			}
 		}
