@@ -497,6 +497,11 @@ void CMOS6569::DrawSpriteRowToBuffer(unsigned int spriteIndex, unsigned int rowI
 
 
 void CMOS6569::RenderGraphicsToBuffer(u8* pixelColorBuffer){
+	if ((mRegs[0xD011-0xD000] & 0x10) == 0){
+		// Screen is blanked, so bail out.
+		return;
+	}
+	
 	// TODO: Clamp to bounds of these buffers (add method arguments to control offset and length),
 	// in order to prevent overflow; also will facilitate if buffer is ever
 	// processed in 8 bits at a time per clock.
