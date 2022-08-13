@@ -26,7 +26,7 @@ typedef enum _eWatcherJumpType{
 
 class CWatcher{
 public:
-	using WatchCallback = int (CWatcher::*)(u16 address);
+	using WatchCallback = int (CWatcher::*)();
 
 private:
 	// NOTE: Address watches limited to instruction fetch addresses.
@@ -41,7 +41,14 @@ private:
 
 	u8 mWriteWatches[WATCHER_ADDRESS_SIZE];
 	WatchCallback mWriteCallbacks[WATCHER_ADDRESS_SIZE];
+
 protected:
+	// Address involved in most recent triggered watch.
+	u16 watchAddress;
+	// Value involved in most recent triggered watch (read or set).
+	u8 value;
+	eWatcherJumpType jumpType;
+
 public:
 	CWatcher();
 	~CWatcher();
@@ -58,12 +65,12 @@ public:
 
 	void SetReadWatch(u16 address, WatchCallback callback = NULL);
 	void ClearReadWatch(u16 address);
-	bool CheckReadWatch(u16 address);
+	bool CheckReadWatch(u16 address, u8 value);
 	virtual int GeneralReportReadWatch(u16 address);
 
 	void SetWriteWatch(u16 address, WatchCallback callback = NULL);
 	void ClearWriteWatch(u16 address);
-	bool CheckWriteWatch(u16 address);
+	bool CheckWriteWatch(u16 address, u8 value);
 	virtual int GeneralReportWriteWatch(u16 address);
 };
 

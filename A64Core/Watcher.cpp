@@ -43,7 +43,8 @@ bool CWatcher::CheckAddressWatch(u16 address){
     if (mAddressWatches[address] != 0){
         WatchCallback callback = mAddressCallbacks[address];
         if (callback != NULL){
-            return (this->*callback)(address) != 0;
+            watchAddress = address;
+            return (this->*callback)() != 0;
         }
 
         return GeneralReportAddressWatch(address) != 0;
@@ -74,7 +75,9 @@ bool CWatcher::CheckJumpWatch(u16 address, eWatcherJumpType jumpType){
     if (mJumpWatches[address] != 0){
         WatchCallback callback = mJumpCallbacks[address];
         if (callback != NULL){
-            return (this->*callback)(address) != 0;
+            watchAddress = address;
+            this->jumpType = jumpType;
+            return (this->*callback)() != 0;
         }
 
         return GeneralReportJumpWatch(address, jumpType) != 0;
@@ -101,11 +104,13 @@ void CWatcher::ClearReadWatch(u16 address){
 }
 
 
-bool CWatcher::CheckReadWatch(u16 address){
+bool CWatcher::CheckReadWatch(u16 address, u8 value){
     if (mReadWatches[address] != 0){
         WatchCallback callback = mReadCallbacks[address];
         if (callback != NULL){
-            return (this->*callback)(address) != 0;
+            watchAddress = address;
+            this->value = value;
+            return (this->*callback)() != 0;
         }
 
         return GeneralReportReadWatch(address) != 0;
@@ -132,11 +137,13 @@ void CWatcher::ClearWriteWatch(u16 address){
 }
 
 
-bool CWatcher::CheckWriteWatch(u16 address){
+bool CWatcher::CheckWriteWatch(u16 address, u8 value){
     if (mWriteWatches[address] != 0){
         WatchCallback callback = mWriteCallbacks[address];
         if (callback != NULL){
-            return (this->*callback)(address) != 0;
+            watchAddress = address;
+            this->value = value;
+            return (this->*callback)() != 0;
         }
 
         return GeneralReportWriteWatch(address) != 0;
