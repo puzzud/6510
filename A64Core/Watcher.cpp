@@ -10,40 +10,66 @@
 #include "Watcher.h"
 
 CWatcher::CWatcher(){
-    memset(mAddressWatches, 0, WATCHER_ADDRESS_SIZE);
-    memset(mJumpWatches, 0, WATCHER_ADDRESS_SIZE);
-    memset(mReadWatches, 0, WATCHER_ADDRESS_SIZE);
-    memset(mWriteWatches, 0, WATCHER_ADDRESS_SIZE);
-
-    for (int i = 0; i < WATCHER_ADDRESS_SIZE; ++i){
-        mAddressCallbacks[i] = NULL;
-        mJumpCallbacks[i] = NULL;
-        mReadCallbacks[i] = NULL;
-        mWriteCallbacks[i] = NULL;
-    }
+    
+    ClearAddressWatchRange(0x0000, 0xFFFF);
+    ClearJumpWatchRange(0x0000, 0xFFFF);
+    ClearReadWatchRange(0x0000, 0xFFFF);
+    ClearWriteWatchRange(0x0000, 0xFFFF);
 }
 
 CWatcher::~CWatcher(){
 }
 
 
+void CWatcher::ClearWatchSetting(SWatchSetting& watchSetting){
+    watchSetting.enabled = false;
+    watchSetting.isRange = false;
+    watchSetting.rangeOffset = 0;
+    watchSetting.callback = NULL;
+}
+
+
 void CWatcher::SetAddressWatch(u16 address, WatchCallback callback){
-    mAddressWatches[address] = 1;
-    mAddressCallbacks[address] = callback;
+    ClearAddressWatch(address);
+
+    SWatchSetting& watchSetting = mAddressWatches[address];
+    watchSetting.enabled = true;
+    watchSetting.callback = callback;
+}
+
+
+void CWatcher::SetAddressWatchRange(u16 address_range_start, u16 address_range_end, WatchCallback callback){
+    u16 rangeOffset = 0;
+    for (uint32_t address = address_range_start; address <= address_range_end; ++address, ++rangeOffset){
+        SetAddressWatch(address, callback);
+
+        SWatchSetting& watchSetting = mAddressWatches[address];
+        watchSetting.isRange = true;
+        watchSetting.rangeOffset = rangeOffset;
+    }
 }
 
 
 void CWatcher::ClearAddressWatch(u16 address){
-    mAddressWatches[address] = 0;
-    mAddressCallbacks[address] = NULL;
+    ClearWatchSetting(mAddressWatches[address]);
+}
+
+
+void CWatcher::ClearAddressWatchRange(u16 address_range_start, u16 address_range_end){
+    for (uint32_t address = address_range_start; address <= address_range_end; ++address){
+        ClearAddressWatch(address);
+    }
 }
 
 
 bool CWatcher::CheckAddressWatch(u16 address){
-    if (mAddressWatches[address] != 0){
-        WatchCallback callback = mAddressCallbacks[address];
+    SWatchSetting& watchSetting = mAddressWatches[address];
+    watchAddress = address;
+    watchRangeOffset = watchSetting.rangeOffset;
+
+    if (watchSetting.enabled){
+        WatchCallback callback = watchSetting.callback;
         if (callback != NULL){
-            watchAddress = address;
             return (this->*callback)() != 0;
         }
 
@@ -60,23 +86,47 @@ int CWatcher::GeneralReportAddressWatch(u16 address){
 
 
 void CWatcher::SetJumpWatch(u16 address, WatchCallback callback){
-    mJumpWatches[address] = 1;
-    mJumpCallbacks[address] = callback;
+    ClearJumpWatch(address);
+
+    SWatchSetting& watchSetting = mJumpWatches[address];
+    watchSetting.enabled = true;
+    watchSetting.callback = callback;
+}
+
+
+void CWatcher::SetJumpWatchRange(u16 address_range_start, u16 address_range_end, WatchCallback callback){
+    u16 rangeOffset = 0;
+    for (uint32_t address = address_range_start; address <= address_range_end; ++address, ++rangeOffset){
+        SetJumpWatch(address, callback);
+
+        SWatchSetting& watchSetting = mJumpWatches[address];
+        watchSetting.isRange = true;
+        watchSetting.rangeOffset = rangeOffset;
+    }
 }
 
 
 void CWatcher::ClearJumpWatch(u16 address){
-    mJumpWatches[address] = 0;
-    mJumpCallbacks[address] = NULL;
+    ClearWatchSetting(mJumpWatches[address]);
+}
+
+
+void CWatcher::ClearJumpWatchRange(u16 address_range_start, u16 address_range_end){
+    for (uint32_t address = address_range_start; address <= address_range_end; ++address){
+        ClearJumpWatch(address);
+    }
 }
 
 
 bool CWatcher::CheckJumpWatch(u16 address, eWatcherJumpType jumpType){
-    if (mJumpWatches[address] != 0){
-        WatchCallback callback = mJumpCallbacks[address];
+    SWatchSetting& watchSetting = mJumpWatches[address];
+    watchAddress = address;
+    watchJumpType = jumpType;
+    watchRangeOffset = watchSetting.rangeOffset;
+
+    if (watchSetting.enabled){
+        WatchCallback callback = watchSetting.callback;
         if (callback != NULL){
-            watchAddress = address;
-            this->jumpType = jumpType;
             return (this->*callback)() != 0;
         }
 
@@ -93,23 +143,47 @@ int CWatcher::GeneralReportJumpWatch(u16 address, eWatcherJumpType jumpType){
 
 
 void CWatcher::SetReadWatch(u16 address, WatchCallback callback){
-    mReadWatches[address] = 1;
-    mReadCallbacks[address] = callback;
+    ClearReadWatch(address);
+
+    SWatchSetting& watchSetting = mReadWatches[address];
+    watchSetting.enabled = true;
+    watchSetting.callback = callback;
+}
+
+
+void CWatcher::SetReadWatchRange(u16 address_range_start, u16 address_range_end, WatchCallback callback){
+    u16 rangeOffset = 0;
+    for (uint32_t address = address_range_start; address <= address_range_end; ++address, ++rangeOffset){
+        SetReadWatch(address, callback);
+
+        SWatchSetting& watchSetting = mReadWatches[address];
+        watchSetting.isRange = true;
+        watchSetting.rangeOffset = rangeOffset;
+    }
 }
 
 
 void CWatcher::ClearReadWatch(u16 address){
-    mReadWatches[address] = 0;
-    mReadCallbacks[address] = NULL;
+    ClearWatchSetting(mReadWatches[address]);
+}
+
+
+void CWatcher::ClearReadWatchRange(u16 address_range_start, u16 address_range_end){
+    for (uint32_t address = address_range_start; address <= address_range_end; ++address){
+        ClearReadWatch(address);
+    }
 }
 
 
 bool CWatcher::CheckReadWatch(u16 address, u8 value){
-    if (mReadWatches[address] != 0){
-        WatchCallback callback = mReadCallbacks[address];
+    SWatchSetting& watchSetting = mReadWatches[address];
+    watchAddress = address;
+    watchValue = value;
+    watchRangeOffset = watchSetting.rangeOffset;
+
+    if (watchSetting.enabled){
+        WatchCallback callback = watchSetting.callback;
         if (callback != NULL){
-            watchAddress = address;
-            this->value = value;
             return (this->*callback)() != 0;
         }
 
@@ -120,29 +194,58 @@ bool CWatcher::CheckReadWatch(u16 address, u8 value){
 }
 
 
+u16 CWatcher::GetReadWatchRangeOffset(u16 address){
+    return mReadWatches[address].rangeOffset;
+}
+
+
 int CWatcher::GeneralReportReadWatch(u16 address){
     return 0;
 }
 
 
 void CWatcher::SetWriteWatch(u16 address, WatchCallback callback){
-    mWriteWatches[address] = 1;
-    mWriteCallbacks[address] = callback;
+    ClearWriteWatch(address);
+
+    SWatchSetting& watchSetting = mWriteWatches[address];
+    watchSetting.enabled = true;
+    watchSetting.callback = callback;
+}
+
+
+void CWatcher::SetWriteWatchRange(u16 address_range_start, u16 address_range_end, WatchCallback callback){
+    u16 rangeOffset = 0;
+    for (uint32_t address = address_range_start; address <= address_range_end; ++address, ++rangeOffset){
+        SetWriteWatch(address, callback);
+
+        SWatchSetting& watchSetting = mWriteWatches[address];
+        watchSetting.isRange = true;
+        watchSetting.rangeOffset = rangeOffset;
+    }
 }
 
 
 void CWatcher::ClearWriteWatch(u16 address){
-    mWriteWatches[address] = 0;
-    mWriteCallbacks[address] = NULL;
+    ClearWatchSetting(mWriteWatches[address]);
+}
+
+
+void CWatcher::ClearWriteWatchRange(u16 address_range_start, u16 address_range_end){
+    for (uint32_t address = address_range_start; address <= address_range_end; ++address){
+        ClearWriteWatch(address);
+    }
 }
 
 
 bool CWatcher::CheckWriteWatch(u16 address, u8 value){
-    if (mWriteWatches[address] != 0){
-        WatchCallback callback = mWriteCallbacks[address];
+    SWatchSetting& watchSetting = mWriteWatches[address];
+    watchAddress = address;
+    watchValue = value;
+    watchRangeOffset = watchSetting.rangeOffset;
+
+    if (watchSetting.enabled){
+        WatchCallback callback = watchSetting.callback;
         if (callback != NULL){
-            watchAddress = address;
-            this->value = value;
             return (this->*callback)() != 0;
         }
 
@@ -151,6 +254,12 @@ bool CWatcher::CheckWriteWatch(u16 address, u8 value){
 
     return false;
 }
+
+
+u16 CWatcher::GetWriteWatchRangeOffset(u16 address){
+    return mWriteWatches[address].rangeOffset;
+}
+
 
 
 int CWatcher::GeneralReportWriteWatch(u16 address){
