@@ -46,11 +46,19 @@ protected:
 
 	// Address involved in most recent triggered watch.
 	u16 watchAddress;
+	
 	// Offset if watch address was specified as a range.
 	u16 watchRangeOffset;
+	
 	// Value involved in most recent triggered watch (read or set).
 	u8 watchValue;
+	
+	// Type of jump of the most recent jump watch triggered.
 	eWatcherJumpType watchJumpType;
+
+	// Address that RTS will redirect,
+	// valid for most recent eWatcherJumpRoutine watch triggered.
+	u16 jumpWatchReturnAddress;
 
 public:
 	CWatcher();
@@ -67,7 +75,7 @@ public:
 	void SetJumpWatchRange(u16 address_range_start, u16 address_range_end, WatchCallback callback = NULL);
 	void ClearJumpWatch(u16 address);
 	void ClearJumpWatchRange(u16 address_range_start, u16 address_range_end);
-	bool CheckJumpWatch(u16 address, eWatcherJumpType jumpType);
+	bool CheckJumpWatch(u16 address, eWatcherJumpType jumpType, u16* returnAddress = NULL);
 	virtual int GeneralReportJumpWatch(u16 address, eWatcherJumpType jumpType);
 
 	void SetReadWatch(u16 address, WatchCallback callback = NULL);

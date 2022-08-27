@@ -118,11 +118,15 @@ void CWatcher::ClearJumpWatchRange(u16 address_range_start, u16 address_range_en
 }
 
 
-bool CWatcher::CheckJumpWatch(u16 address, eWatcherJumpType jumpType){
+bool CWatcher::CheckJumpWatch(u16 address, eWatcherJumpType jumpType, u16* returnAddress){
     SWatchSetting& watchSetting = mJumpWatches[address];
     watchAddress = address;
     watchJumpType = jumpType;
     watchRangeOffset = watchSetting.rangeOffset;
+
+    if (returnAddress != NULL){
+        jumpWatchReturnAddress = *returnAddress;
+    }
 
     if (watchSetting.enabled){
         WatchCallback callback = watchSetting.callback;
