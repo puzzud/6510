@@ -65,6 +65,7 @@ class CBM64Main{
 
 		int FlashRom(CRom* rom, const char* fname);
 		int LoadApp(char* fname);
+		int LoadAppWithoutBasicFromMemory(u8* m, unsigned int fileSize);
 		int LoadAppWithoutBasic(const char* fname);
 		int LoadBasic(char* fname);
 		void SetupPostKernalConfig();

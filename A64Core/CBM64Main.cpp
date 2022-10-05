@@ -156,6 +156,18 @@ int CBM64Main::LoadApp(char* fname){
 }
 
 
+int CBM64Main::LoadAppWithoutBasicFromMemory(u8* m, unsigned int fileSize){
+	cout << "File Size: " << fileSize << endl;
+	
+	u16 startAddress = (m[1] << 8) | m[0];
+	cout << std::hex << "Start Address:  " << startAddress << endl << std::dec;
+
+	mRam->PokeBlock(startAddress, m + 2, fileSize - 2);
+
+	return 0;
+}
+
+
 int CBM64Main::LoadAppWithoutBasic(const char* fname){
 	ifstream file(fname, ios::in|ios::binary|ios::ate);
 	if (file.is_open()){
