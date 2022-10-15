@@ -1,8 +1,18 @@
 cmake_minimum_required(VERSION 3.10.0)
 
+project(cmos6510)
+
 set(CMAKE_CXX_FLAGS_DEBUG "-fPIC -Wall -g")
 set(CMAKE_CXX_FLAGS_RELEASE "-fPIC -O3")
 #set(CMAKE_CXX_FLAGS -pthread)
+
+if (CMAKE_SYSTEM_NAME STREQUAL "Windows")
+set(CMAKE_CXX_STANDARD_LIBRARIES "-static-libgcc -static-libstdc++ -lwsock32 -lws2_32 ${CMAKE_CXX_STANDARD_LIBRARIES}")
+set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,-Bstatic,--whole-archive -lwinpthread -Wl,--no-whole-archive")
+set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -Wl,-Bstatic,--whole-archive -lwinpthread -Wl,--no-whole-archive")
+else()
+set(CMAKE_CXX_STANDARD_LIBRARIES "-static-libgcc -static-libstdc++ ${CMAKE_CXX_STANDARD_LIBRARIES}")
+endif()
 
 # Options
 OPTION(EMBEDDED_ROMS "Build CBM ROMs into binary" OFF)
@@ -29,8 +39,6 @@ if(EMSCRIPTEN)
     set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${USE_FLAGS}")
     set(CMAKE_EXECUTABLE_SUFFIX ".html")
 endif(EMSCRIPTEN)
-
-project(cmos6510)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED_ON)
