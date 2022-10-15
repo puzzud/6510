@@ -5,7 +5,7 @@
 #include <unistd.h>
 #include <iostream>
 #include <stdio.h>
-#include <termios.h>
+//#include <termios.h>
 #include <stdio.h>
 #include <signal.h>
 #include <stdlib.h>
@@ -13,7 +13,7 @@
 #include "A64Core/CBM64Main.h"
 #include "A64Core/General.h"
 
-
+/*
 class HiresTimeImpl;
 
 CBM64Main* cbm64 = NULL;
@@ -191,8 +191,10 @@ bool isKeystroke(std::vector<char>& keystroke, const std::vector<char>& k) {
     }
     return true;
 }
+*/
 
 int main(int argc, char* argv[]) {
+    /*
     start = now();
     cbm64 = new CBM64Main();
     cbm64->Init();
@@ -256,7 +258,7 @@ int main(int argc, char* argv[]) {
     std::cout << "ended..." << std::endl;
 
 
-
+    */
 }
 
 
