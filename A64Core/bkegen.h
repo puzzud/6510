@@ -13,7 +13,6 @@
 #define BKEGEN_H
 
 #include <pthread.h>
-#include <sys/times.h>
 
 //#define BKE_DEBUG 10
 //#define BKE_DEBUG_MALLOC
