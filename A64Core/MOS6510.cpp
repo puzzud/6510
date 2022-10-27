@@ -397,6 +397,10 @@ void CMOS6510::SetHiresTime(CHiresTime* hiresTime){
 /*
  * Stack operations
  */
+void CMOS6510::ResetStack(){
+	r_sp = 0xFF;
+}
+
 void CMOS6510::Push(u8 val){
 	mMemory->Poke(STACKOFFSET + r_sp, val);
 	r_sp--;
@@ -639,6 +643,16 @@ u16 CMOS6510::GetPC(){
 
 void CMOS6510::SetPC(u16 address){
 	r_pc = address;
+}
+
+
+void CMOS6510::SetFlag(u8 f){
+	SETFLAG(f);
+}
+
+
+void CMOS6510::ClearFlag(u8 f){
+	CLRFLAG(f);
 }
 
 

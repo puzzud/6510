@@ -222,6 +222,7 @@ public:
 	~CMOS6510();
     int Cycle();
 	//Stack
+	void ResetStack();
 	void Push(u8);
 	void Push16(u16);
 	u8 Pop();
@@ -233,6 +234,9 @@ public:
 	//PC	
 	u16 GetPC();
 	void SetPC(u16 address);
+	//Flags
+	void SetFlag(u8 f);
+	void ClearFlag(u8 f);
 	//IRQ
 	void SetIRQ(bool state);
 
