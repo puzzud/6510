@@ -153,6 +153,8 @@ class CMOS6569 : public CDevice{
 		bool IsSpriteEnabled(unsigned int spriteIndex);
 		u16 GetSpriteXPosition(unsigned int spriteIndex);
 		u8 GetSpriteYPosition(unsigned int spriteIndex);
+		void SetSpriteXPosition(unsigned int spriteIndex, u16 xPosition);
+		void SetSpriteYPosition(unsigned int spriteIndex, u8 yPosition);
 		unsigned int GetSpriteHorizontalScale(unsigned int spriteIndex);
 		unsigned int GetSpriteVerticalScale(unsigned int spriteIndex);
 		u8 GetSpriteWidth(unsigned int spriteIndex);

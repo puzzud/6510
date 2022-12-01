@@ -188,6 +188,22 @@ u8 CMOS6569::GetSpriteYPosition(unsigned int spriteIndex){
 }
 
 
+void CMOS6569::SetSpriteXPosition(unsigned int spriteIndex, u16 xPosition){
+	u8 spriteXPositionMsbs = mRegs[0xD010-0xD000];
+	
+	mRegs[0xD010-0xD000] = (xPosition > 255) ?
+		spriteXPositionMsbs | (1 << spriteIndex) :
+		spriteXPositionMsbs & ~(1 << spriteIndex);
+
+	mRegs[0xD000-0xD000 + (spriteIndex * 2)] = (u8)xPosition & 0xff;
+}
+
+
+void CMOS6569::SetSpriteYPosition(unsigned int spriteIndex, u8 yPosition){
+	mRegs[0xD001-0xD000 + (spriteIndex * 2)] = yPosition;
+}
+
+
 unsigned int CMOS6569::GetSpriteHorizontalScale(unsigned int spriteIndex){
 	u8 spriteXExpands = mRegs[0xD01D-0xD000];
 	return ((spriteXExpands & (1 << spriteIndex)) != 0) ? 2 : 1;
