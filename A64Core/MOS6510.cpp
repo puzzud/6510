@@ -109,7 +109,7 @@ const MOS6502Cycles cycleMatrix[] =
     { DEX,	0,	    0,	    0,	    0,	    2,	    0,	    0,	    0,	    0,	    0,	    0,	    0,	    0	    	},
     { DEY,	0,	    0,	    0,	    0,	    2,	    0,	    0,	    0,	    0,	    0,	    0,	    0,	    0	    	},
     { EOR,	2,	    3,	    4,	    0,	    2,	    0,	    4,	    4,	    4,	    0,	    6,	    5,	    0	    	},
-    { CLI,	0,	    5,	    6,	    0,	    0,	    0,	    6,	    7,	    0,	    0,	    0,	    0,	    0	    	},
+    { INC,	0,	    5,	    6,	    0,	    0,	    0,	    6,	    7,	    0,	    0,	    0,	    0,	    0	    	},
     { INX,	0,	    0,	    0,	    0,	    2,	    0,	    0,	    0,	    0,	    0,	    0,	    0,	    0	    	},
     { INY,	0,	    0,	    0,	    0,	    2,	    0,	    0,	    0,	    0,	    0,	    0,	    0,	    0	    	},
     { JMP,	0,	    0,	    0,	    0,	    0,	    0,	    3,	    0,	    0,	    5,	    0,	    0,	    0	    	},
@@ -799,7 +799,9 @@ void CMOS6510::F_BCC(u8 addressmode){
 	GetOperandAddress(addressmode, &address);
 	
 	if(ISFLAG(FLAG_C) == 0){
-		r_pc = r_pc + (s8)mMemory->Peek(address); 
+		u16 oriPage = (u16)((r_pc+1) & 0xff00);
+        r_pc += (s8)mMemory->Peek(address);  
+        _cycles += ((u16)(r_pc & 0xff00) != oriPage) ? 2 : 1;
 	}
 }
 
@@ -812,7 +814,9 @@ void CMOS6510::F_BCS(u8 addressmode){
 	GetOperandAddress(addressmode, &address);
 	
 	if(ISFLAG(FLAG_C) == 1){
-		r_pc = r_pc + (s8)mMemory->Peek(address); 
+		u16 oriPage = (u16)((r_pc+1) & 0xff00);
+        r_pc += (s8)mMemory->Peek(address);  
+        _cycles += ((u16)(r_pc & 0xff00) != oriPage) ? 2 : 1;
 	}
 }
 
@@ -825,7 +829,9 @@ void CMOS6510::F_BEQ(u8 addressmode){
 	GetOperandAddress(addressmode, &address);
 	
 	if(ISFLAG(FLAG_Z) == 1){
-		r_pc = r_pc + (s8)mMemory->Peek(address); 
+		u16 oriPage = (u16)((r_pc+1) & 0xff00);
+        r_pc += (s8)mMemory->Peek(address);  
+        _cycles += ((u16)(r_pc & 0xff00) != oriPage) ? 2 : 1;
 	}
 }
 
@@ -871,13 +877,9 @@ void CMOS6510::F_BMI(u8 addressmode){
 	GetOperandAddress(addressmode, &address);
 	
 	if(ISFLAG(FLAG_N) == 1){
-        s8 delta = (s8)mMemory->Peek(address);
-        int oriPage = (int)((r_pc+1) / 256);
-		r_pc = r_pc + delta; 
-        _cycles++;
-        if ((int)(r_pc/256) != oriPage) {
-            _cycles++;
-        }
+        u16 oriPage = (u16)((r_pc+1) & 0xff00);
+        r_pc += (s8)mMemory->Peek(address);  
+        _cycles += ((u16)(r_pc & 0xff00) != oriPage) ? 2 : 1;
 	}
 }
  
@@ -889,7 +891,9 @@ void CMOS6510::F_BNE(u8 addressmode){
 	GetOperandAddress(addressmode, &address);
 	
 	if(ISFLAG(FLAG_Z) == 0){
-		r_pc = r_pc + (s8)mMemory->Peek(address);  
+		u16 oriPage = (u16)((r_pc+1) & 0xff00);
+        r_pc += (s8)mMemory->Peek(address);  
+        _cycles += ((u16)(r_pc & 0xff00) != oriPage) ? 2 : 1;
 	}
 	
 }
@@ -902,14 +906,9 @@ void CMOS6510::F_BPL(u8 addressmode){
 	GetOperandAddress(addressmode, &address);
 	
 	if(ISFLAG(FLAG_N) == 0){
-        s8 delta = (s8)mMemory->Peek(address);
-        int oriPage = (int)((r_pc+1) / 256);
-		r_pc = r_pc + delta; 
-        _cycles++;
-
-        if ((int)(r_pc/256) != oriPage) {
-            _cycles++;
-        }
+		u16 oriPage = (u16)((r_pc+1) & 0xff00);
+        r_pc += (s8)mMemory->Peek(address);  
+        _cycles += ((u16)(r_pc & 0xff00) != oriPage) ? 2 : 1;
 	}
     
 }
@@ -938,7 +937,9 @@ void CMOS6510::F_BVC(u8 addressmode){
 	GetOperandAddress(addressmode, &address);
 
 	if(ISFLAG(FLAG_V) == 0){
-		r_pc = r_pc + (s8)mMemory->Peek(address); 
+		u16 oriPage = (u16)((r_pc+1) & 0xff00);
+        r_pc += (s8)mMemory->Peek(address);  
+        _cycles += ((u16)(r_pc & 0xff00) != oriPage) ? 2 : 1;
 	}
 }
 
@@ -950,7 +951,9 @@ void CMOS6510::F_BVS(u8 addressmode){
 	GetOperandAddress(addressmode, &address);
 	
 	if(ISFLAG(FLAG_V) == 1){
-		r_pc = r_pc + (s8)mMemory->Peek(address); 
+		u16 oriPage = (u16)((r_pc+1) & 0xff00);
+        r_pc += (s8)mMemory->Peek(address);  
+        _cycles += ((u16)(r_pc & 0xff00) != oriPage) ? 2 : 1;
 	}
 }
 
