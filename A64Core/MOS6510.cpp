@@ -143,6 +143,8 @@ const MOS6502Cycles cycleMatrix[] =
     { TYA,	0,	    0,	    0,	    0,	    2,	    0,	    0,	    0,	    0,	    0,	    0,	    0,	    0	    	}
 };
 
+static bool AreAddressesInSamePage(u16 address1, u16 address2);
+
 CMOS6510::CMOS6510(BKE_MUTEX mutex){
 
 	mMemory = mBus = CBus::GetInstance();
@@ -799,9 +801,9 @@ void CMOS6510::F_BCC(u8 addressmode){
 	GetOperandAddress(addressmode, &address);
 	
 	if(ISFLAG(FLAG_C) == 0){
-		u16 oriPage = (u16)((r_pc+1) & 0xff00);
-        r_pc += (s8)mMemory->Peek(address);  
-        _cycles += ((u16)(r_pc & 0xff00) != oriPage) ? 2 : 1;
+		u16 prevPc = r_pc;
+        r_pc += (s8)mMemory->Peek(address);
+        _cycles += !AreAddressesInSamePage(r_pc, prevPc + 1) ? 2 : 1;
 	}
 }
 
@@ -814,9 +816,9 @@ void CMOS6510::F_BCS(u8 addressmode){
 	GetOperandAddress(addressmode, &address);
 	
 	if(ISFLAG(FLAG_C) == 1){
-		u16 oriPage = (u16)((r_pc+1) & 0xff00);
-        r_pc += (s8)mMemory->Peek(address);  
-        _cycles += ((u16)(r_pc & 0xff00) != oriPage) ? 2 : 1;
+		u16 prevPc = r_pc;
+        r_pc += (s8)mMemory->Peek(address);
+        _cycles += !AreAddressesInSamePage(r_pc, prevPc + 1) ? 2 : 1;
 	}
 }
 
@@ -829,9 +831,9 @@ void CMOS6510::F_BEQ(u8 addressmode){
 	GetOperandAddress(addressmode, &address);
 	
 	if(ISFLAG(FLAG_Z) == 1){
-		u16 oriPage = (u16)((r_pc+1) & 0xff00);
-        r_pc += (s8)mMemory->Peek(address);  
-        _cycles += ((u16)(r_pc & 0xff00) != oriPage) ? 2 : 1;
+		u16 prevPc = r_pc;
+        r_pc += (s8)mMemory->Peek(address);
+        _cycles += !AreAddressesInSamePage(r_pc, prevPc + 1) ? 2 : 1;
 	}
 }
 
@@ -877,9 +879,9 @@ void CMOS6510::F_BMI(u8 addressmode){
 	GetOperandAddress(addressmode, &address);
 	
 	if(ISFLAG(FLAG_N) == 1){
-        u16 oriPage = (u16)((r_pc+1) & 0xff00);
-        r_pc += (s8)mMemory->Peek(address);  
-        _cycles += ((u16)(r_pc & 0xff00) != oriPage) ? 2 : 1;
+		u16 prevPc = r_pc;
+        r_pc += (s8)mMemory->Peek(address);
+        _cycles += !AreAddressesInSamePage(r_pc, prevPc + 1) ? 2 : 1;
 	}
 }
  
@@ -891,9 +893,9 @@ void CMOS6510::F_BNE(u8 addressmode){
 	GetOperandAddress(addressmode, &address);
 	
 	if(ISFLAG(FLAG_Z) == 0){
-		u16 oriPage = (u16)((r_pc+1) & 0xff00);
-        r_pc += (s8)mMemory->Peek(address);  
-        _cycles += ((u16)(r_pc & 0xff00) != oriPage) ? 2 : 1;
+		u16 prevPc = r_pc;
+        r_pc += (s8)mMemory->Peek(address);
+        _cycles += !AreAddressesInSamePage(r_pc, prevPc + 1) ? 2 : 1;
 	}
 	
 }
@@ -906,9 +908,9 @@ void CMOS6510::F_BPL(u8 addressmode){
 	GetOperandAddress(addressmode, &address);
 	
 	if(ISFLAG(FLAG_N) == 0){
-		u16 oriPage = (u16)((r_pc+1) & 0xff00);
-        r_pc += (s8)mMemory->Peek(address);  
-        _cycles += ((u16)(r_pc & 0xff00) != oriPage) ? 2 : 1;
+		u16 prevPc = r_pc;
+        r_pc += (s8)mMemory->Peek(address);
+        _cycles += !AreAddressesInSamePage(r_pc, prevPc + 1) ? 2 : 1;
 	}
     
 }
@@ -937,9 +939,9 @@ void CMOS6510::F_BVC(u8 addressmode){
 	GetOperandAddress(addressmode, &address);
 
 	if(ISFLAG(FLAG_V) == 0){
-		u16 oriPage = (u16)((r_pc+1) & 0xff00);
-        r_pc += (s8)mMemory->Peek(address);  
-        _cycles += ((u16)(r_pc & 0xff00) != oriPage) ? 2 : 1;
+		u16 prevPc = r_pc;
+        r_pc += (s8)mMemory->Peek(address);
+        _cycles += !AreAddressesInSamePage(r_pc, prevPc + 1) ? 2 : 1;
 	}
 }
 
@@ -951,9 +953,9 @@ void CMOS6510::F_BVS(u8 addressmode){
 	GetOperandAddress(addressmode, &address);
 	
 	if(ISFLAG(FLAG_V) == 1){
-		u16 oriPage = (u16)((r_pc+1) & 0xff00);
-        r_pc += (s8)mMemory->Peek(address);  
-        _cycles += ((u16)(r_pc & 0xff00) != oriPage) ? 2 : 1;
+		u16 prevPc = r_pc;
+        r_pc += (s8)mMemory->Peek(address);
+        _cycles += !AreAddressesInSamePage(r_pc, prevPc + 1) ? 2 : 1;
 	}
 }
 
@@ -1962,4 +1964,8 @@ void CMOS6510::NMI(){
 	if(mWatcher != NULL){
 		mWatcher->CheckJumpWatch(r_pc, eWatcherJumpInterrupt);
 	}
+}
+
+static bool AreAddressesInSamePage(u16 address1, u16 address2){
+	return (address1 & 0xff00) == (address2 & 0xff00);
 }
