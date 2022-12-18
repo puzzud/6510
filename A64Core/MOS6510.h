@@ -155,6 +155,9 @@ typedef struct _MOS6502Opcodes{
 	char description[50];
 }MOS6502Opcodes;
 
+
+#define ___0 0
+
 typedef struct _MOS6502Cycles{
 	MOS6502Instruction ID;
 	int cycles[ADDRESS_MODE_MAX]; //order see eMos6502AddressMode
