@@ -249,7 +249,7 @@ public:
     uint64_t GetCycles();
 
 private:
-	bool GetOperandAddress(u8 addressMode, u16* address);
+	bool GetOperandAddress(u8 addressMode, u16* address, bool* crossesPageBoundary = NULL);
 	void IRQ();
 	void NMI();
 	

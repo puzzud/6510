@@ -543,6 +543,9 @@ uint64_t CMOS6510::GetCycles() {
 /*
  * Returns the Address where the opcode has to find the information to execute 
  * (mostly where the operands can be found)
+ * Optionally returns if operation crosses a page boundary, if relevant for operand,
+ * as not all address mode / operation page boundary crosses matter much
+ * (with respect to adding clock cycles).
  * 
  * imm = #$00 
  * zp = $00 
@@ -556,8 +559,12 @@ uint64_t CMOS6510::GetCycles() {
  * ind = ($0000) 
  * rel = $0000 (PC-relative) 
  */
-bool CMOS6510::GetOperandAddress(u8 addressMode, u16* address){ 
+bool CMOS6510::GetOperandAddress(u8 addressMode, u16* address, bool* crossesPageBoundary){ 
 	bool ret = true;
+	u16 prevAddress = *address;
+	if (crossesPageBoundary != NULL){
+		*crossesPageBoundary = false;
+	}
 	switch(addressMode){
 		case ADDRESS_MODE_IMPLIED:	
 		case ADDRESS_MODE_ACCUMULATOR:
@@ -588,6 +595,10 @@ bool CMOS6510::GetOperandAddress(u8 addressMode, u16* address){
 			*address = (u16)( mMemory->Peek(r_pc) & 0xFF ); 
 			*address = mMemory->Peek16(*address) + r_y; 
 			r_pc = r_pc + 1 ; 
+
+			if (crossesPageBoundary != NULL){
+				*crossesPageBoundary = !AreAddressesInSamePage(*address, prevAddress);
+			}
 			break;
 		case ADDRESS_MODE_ABSOLUTE:  //abs = $0000 ; (Absolute)
 			*address = mMemory->Peek16(r_pc);
@@ -596,10 +607,18 @@ bool CMOS6510::GetOperandAddress(u8 addressMode, u16* address){
 		case ADDRESS_MODE_ABSOLUTE_X: //abx = $0000,X ; (Index)
 			*address = mMemory->Peek16(r_pc) + r_x;
 			r_pc = r_pc + 2;
+
+			if (crossesPageBoundary != NULL){
+				*crossesPageBoundary = !AreAddressesInSamePage(*address, prevAddress);
+			}
 			break;
 		case ADDRESS_MODE_ABSOLUTE_Y: //aby = $0000,Y ; (Index)
 			*address = mMemory->Peek16(r_pc) + r_y;
 			r_pc = r_pc + 2;
+
+			if (crossesPageBoundary != NULL){
+				*crossesPageBoundary = !AreAddressesInSamePage(*address, prevAddress);
+			}
 			break;
 		case ADDRESS_MODE_INDIRECT:// ind = ($0000) ; (Indirect) 
 			*address = mMemory->Peek16(r_pc); 
@@ -701,8 +720,9 @@ void CMOS6510::F_ADC(u8 addressmode){
 	u16 address;
 	u8 oper; 
 	u16 val; //take a u16 to have place for the carry bit
-	
-	GetOperandAddress(addressmode, &address);
+	bool crossesPageBoundary = false;
+
+	GetOperandAddress(addressmode, &address, &crossesPageBoundary);
 	oper = mMemory->Peek(address);
 	
 	val = r_a + oper + (u8)(ISFLAG(FLAG_C));
@@ -724,6 +744,10 @@ void CMOS6510::F_ADC(u8 addressmode){
 	if(mWatcher != NULL){
 		mWatcher->CheckReadWatch(address, oper);
 	}
+
+	if (crossesPageBoundary){
+		++_cycles;
+	}
 }
 
 /*
@@ -732,8 +756,9 @@ void CMOS6510::F_ADC(u8 addressmode){
 void CMOS6510::F_AND(u8 addressmode){ //Mos6502AddressMode
 	u16 address;
 	u8 val;
+	bool crossesPageBoundary = false;
 	
-	GetOperandAddress(addressmode, &address);
+	GetOperandAddress(addressmode, &address, &crossesPageBoundary);
 	val = mMemory->Peek(address);
 		
 	r_a = r_a & val;
@@ -746,6 +771,10 @@ void CMOS6510::F_AND(u8 addressmode){ //Mos6502AddressMode
 
 	if(mWatcher != NULL){
 		mWatcher->CheckReadWatch(address, val);
+	}
+
+	if (crossesPageBoundary){
+		++_cycles;
 	}
 }
 
@@ -995,8 +1024,9 @@ void CMOS6510::F_CMP(u8 addressmode){
 	u16 address;
 	u8 m;
 	s8 val;
+	bool crossesPageBoundary = false;
 	
-	GetOperandAddress(addressmode, &address);	
+	GetOperandAddress(addressmode, &address, &crossesPageBoundary);
 	m = mMemory->Peek(address);
 	
 	CLRFLAG(FLAG_C);
@@ -1017,6 +1047,10 @@ void CMOS6510::F_CMP(u8 addressmode){
 
 	if(mWatcher != NULL){
 		mWatcher->CheckReadWatch(address, m);
+	}
+
+	if (crossesPageBoundary){
+		++_cycles;
 	}
 }
 
@@ -1162,8 +1196,9 @@ void CMOS6510::F_DEY(u8 addressmode){
 void CMOS6510::F_EOR(u8 addressmode){
 	u16 address;
 	u8 m;
+	bool crossesPageBoundary = false;
 	
-	GetOperandAddress(addressmode, &address);	
+	GetOperandAddress(addressmode, &address, &crossesPageBoundary);
 	m = mMemory->Peek(address);
 
 	CLRFLAG(FLAG_Z);
@@ -1181,6 +1216,10 @@ void CMOS6510::F_EOR(u8 addressmode){
 
 	if(mWatcher != NULL){
 		mWatcher->CheckReadWatch(address, m);
+	}
+
+	if (crossesPageBoundary){
+		++_cycles;
 	}
 }
 
@@ -1296,8 +1335,9 @@ void CMOS6510::F_JSR(u8 addressmode){
 void CMOS6510::F_LDA(u8 addressmode){
 	u16 address;
 	u8 m;
+	bool crossesPageBoundary = false;
 	
-	GetOperandAddress(addressmode, &address);	
+	GetOperandAddress(addressmode, &address, &crossesPageBoundary);
 	m = mMemory->Peek(address);
 
 	CLRFLAG(FLAG_Z);
@@ -1315,6 +1355,10 @@ void CMOS6510::F_LDA(u8 addressmode){
 	if(mWatcher != NULL){
 		mWatcher->CheckReadWatch(address, m);
 	}
+
+	if (crossesPageBoundary){
+		++_cycles;
+	}
 }
 
 
@@ -1325,6 +1369,7 @@ void CMOS6510::F_LDA(u8 addressmode){
 void CMOS6510::F_LDX(u8 addressmode){
 	u16 address;
 	u8 m;
+	bool crossesPageBoundary = false;
 	
 	GetOperandAddress(addressmode, &address);	
 	m = mMemory->Peek(address);
@@ -1345,6 +1390,10 @@ void CMOS6510::F_LDX(u8 addressmode){
 	if(mWatcher != NULL){
 		mWatcher->CheckReadWatch(address, m);
 	}
+
+	if (crossesPageBoundary){
+		++_cycles;
+	}
 }
 
 
@@ -1356,8 +1405,9 @@ void CMOS6510::F_LDX(u8 addressmode){
 void CMOS6510::F_LDY(u8 addressmode){
 	u16 address;
 	u8 m;
-	
-	GetOperandAddress(addressmode, &address);	
+	bool crossesPageBoundary = false;
+
+	GetOperandAddress(addressmode, &address, &crossesPageBoundary);	
 	m = mMemory->Peek(address);
 
 	CLRFLAG(FLAG_Z);
@@ -1375,6 +1425,10 @@ void CMOS6510::F_LDY(u8 addressmode){
 
 	if(mWatcher != NULL){
 		mWatcher->CheckReadWatch(address, m);
+	}
+
+	if (crossesPageBoundary){
+		++_cycles;
 	}
 }
 
@@ -1439,11 +1493,12 @@ void CMOS6510::F_NOP(u8 addressmode){
 void CMOS6510::F_ORA(u8 addressmode){
 	u16 address;
 	u8 m;	
+	bool crossesPageBoundary = false;
 	
 	CLRFLAG(FLAG_Z);		
 	CLRFLAG(FLAG_N);		
 	
-	GetOperandAddress(addressmode, &address);
+	GetOperandAddress(addressmode, &address, &crossesPageBoundary);
 	m = mMemory->Peek(address);
 	
 	r_a = m | r_a;
@@ -1460,6 +1515,10 @@ void CMOS6510::F_ORA(u8 addressmode){
 
 	if(mWatcher != NULL){
 		mWatcher->CheckReadWatch(address, m);
+	}
+
+	if (crossesPageBoundary){
+		++_cycles;
 	}
 }
 
@@ -1639,8 +1698,9 @@ void CMOS6510::F_SBC(u8 addressmode){
 	u8 m;	
 	s16 val, acalc;
 	//u8 sbit;
+	bool crossesPageBoundary = false;
 	
-	GetOperandAddress(addressmode, &address);
+	GetOperandAddress(addressmode, &address, &crossesPageBoundary);
 	prevM = m = mMemory->Peek(address);
 
 	acalc = r_a - m - ( 1 - ISFLAG(FLAG_C));
@@ -1684,6 +1744,10 @@ void CMOS6510::F_SBC(u8 addressmode){
 
 	if(mWatcher != NULL){
 		mWatcher->CheckReadWatch(address, prevM);
+	}
+
+	if (crossesPageBoundary){
+		++_cycles;
 	}
 }
 
