@@ -21,10 +21,10 @@ extern char _binary_CHAR_ROM_end[];
 
 CCharRom::CCharRom():CRom(CHARROMSIZE){
 #ifdef EMBEDDED_ROMS
-    std::cout << "adding embedded rom" << std::endl;
+    debug_out << "adding embedded rom" << std::endl;
     int len = (uint64_t)(&_binary_CHAR_ROM_end) - (uint64_t)(&_binary_CHAR_ROM_start);
     if (CHARROMSIZE != len) {
-        std::cout << "char rom error... embedded len: " << len << " expect: " << CHARROMSIZE << std::endl;
+        debug_out << "char rom error... embedded len: " << len << " expect: " << CHARROMSIZE << std::endl;
         exit(-1);
     }
     memcpy(mRom, _binary_CHAR_ROM_start, CHARROMSIZE);
@@ -46,7 +46,7 @@ u8 CCharRom::Peek(u16 address){
 
 int CCharRom::Poke(u16 address, u8 val){
 	//Can not poke into ROM
-	cout << "CCharRom Poke:" << (int)address << ", m=" << (int)val << endl;
+	debug_out << "CCharRom Poke:" << (int)address << ", m=" << (int)val << endl;
 	CBus::GetInstance()->PokeDevice(eBusRam,address,val);
 
 	return -1;

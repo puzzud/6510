@@ -21,10 +21,10 @@ extern char _binary_BASIC_ROM_end[];
 
 CBasicRom::CBasicRom():CRom(BASICROMSIZE){
 #ifdef EMBEDDED_ROMS
-    std::cout << "adding embedded rom" << std::endl;
+    debug_out << "adding embedded rom" << std::endl;
     int len = (uint64_t)(&_binary_BASIC_ROM_end) - (uint64_t)(&_binary_BASIC_ROM_start);
     if (BASICROMSIZE != len) {
-        std::cout << "basic rom error... embedded len: " << len << " expect: " << BASICROMSIZE << std::endl;
+        debug_out << "basic rom error... embedded len: " << len << " expect: " << BASICROMSIZE << std::endl;
         exit(-1);
     }
     memcpy(mRom, _binary_BASIC_ROM_start, BASICROMSIZE);

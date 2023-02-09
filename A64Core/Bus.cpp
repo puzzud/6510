@@ -109,7 +109,7 @@ void CBus::Register(e_BusDevice devid, CDevice* device, u16 fromAddress, u16 toA
 			mSid.toAddress = toAddress;
 			break;
 		default:
-			cout << "Error! 109" << endl;
+			debug_out << "Error! 109" << endl;
 			break;
 	}
 
@@ -175,7 +175,7 @@ u8 CBus::Peek(u16 address){
 			e_BusDevice deviceId = GetDeviceIdFromAddress(address);
 
 			if(deviceId == eBusNone){
-				cout << "Unmapped address peeked: 0x" << std::hex << address << " : 0x" << endl << std::dec;
+				debug_out << "Unmapped address peeked: 0x" << std::hex << address << " : 0x" << endl << std::dec;
 				return 0xFF; // NOTE: Return 0xFF to maintain previous behavior of accessing through VIC.
 			}else if(deviceId == eBusCpu){
 				if(address == 0x0000){
@@ -212,7 +212,7 @@ void CBus::Poke(u16 address, u8 m){
 			e_BusDevice deviceId = GetDeviceIdFromAddress(address);
 
 			if(deviceId == eBusNone){
-				cout << "Unmapped address poked: 0x" << std::hex << address << " with 0x" << int(m) << endl << std::dec;
+				debug_out << "Unmapped address poked: 0x" << std::hex << address << " with 0x" << int(m) << endl << std::dec;
 			}else if(deviceId == eBusCpu){
 				if(address == 0x0000){	
 					// Do nothing special for now.
@@ -295,7 +295,7 @@ void CBus::PokeDevice(u8 deviceID, u16 address, u8 m){
 			mSid.device->Poke(address, m);
 			break;
 		default:
-			cout << "Error! 1239" << endl;
+			debug_out << "Error! 1239" << endl;
 			break;
 	}
 }
@@ -330,7 +330,7 @@ u8 CBus::PeekDevice(u8 deviceID, u16 address){
 			return mSid.device->Peek(address);
 			break;
 		default:
-			cout << "Error! 1239" << endl;
+			debug_out << "Error! 1239" << endl;
 			break;
 	}
 	return 0;

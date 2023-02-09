@@ -9,11 +9,13 @@
 
 #include "CBM64Main.h"
 
+CDebugOutStream debug_out;
+
 int CBM64Main::Init(){
-	std::cout << "---------------------------------\n";
-    std::cout << "Commodore64 Emulator\n";
-    std::cout << "Copyright (C)2008, Bruno Keymolen\n";
-    std::cout << "---------------------------------\n";
+	debug_out << "---------------------------------\n";
+    debug_out << "Commodore64 Emulator\n";
+    debug_out << "Copyright (C)2008, Bruno Keymolen\n";
+    debug_out << "---------------------------------\n";
 	
 	BKE_MUTEX_CREATE(mMutex);	 
 	
@@ -157,10 +159,10 @@ int CBM64Main::LoadApp(char* fname){
 
 
 int CBM64Main::LoadAppWithoutBasicFromMemory(u8* m, unsigned int fileSize){
-	cout << "File Size: " << fileSize << endl;
+	debug_out << "File Size: " << fileSize << endl;
 	
 	u16 startAddress = (m[1] << 8) | m[0];
-	cout << std::hex << "Start Address:  " << startAddress << endl << std::dec;
+	debug_out << std::hex << "Start Address:  " << startAddress << endl << std::dec;
 
 	mRam->PokeBlock(startAddress, m + 2, fileSize - 2);
 
@@ -172,12 +174,12 @@ int CBM64Main::LoadAppWithoutBasic(const char* fname){
 	ifstream file(fname, ios::in|ios::binary|ios::ate);
 	if (file.is_open()){
 		unsigned int fileSize = file.tellg();
-		cout << "File Size: " << fileSize << endl;
+		debug_out << "File Size: " << fileSize << endl;
 		file.seekg(0, ios::beg);
 
 		u16 startAddress;
 		file.read((char*)&startAddress, 2);
-		cout << std::hex << "Start Address:  " << startAddress << endl << std::dec;
+		debug_out << std::hex << "Start Address:  " << startAddress << endl << std::dec;
 
 		u8* m = new u8[fileSize - 2];
 		file.read((char*)m, fileSize - 2);

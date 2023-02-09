@@ -56,8 +56,8 @@ int CUTestOpcode::Test_ADC(u8 opcode, u8 A, u8 M, u8 C, char* info){
 
 	x, y, p = 0; //clear registers
 	sp = 0xFF; //set stack pointer
-	cout << setfill('0') << uppercase;
-	cout <<  __FUNCTION__ << " - 0x" << setw(2) << hex << (int)opcode << ", " << info << " : ";
+	debug_out << setfill('0') << uppercase;
+	debug_out <<  __FUNCTION__ << " - 0x" << setw(2) << hex << (int)opcode << ", " << info << " : ";
 
 	srand((unsigned)time(0)); 
 
@@ -177,9 +177,9 @@ int CUTestOpcode::Test_ADC(u8 opcode, u8 A, u8 M, u8 C, char* info){
 	
 ADC_0x69_EXIT:
 	if(ret == 0){
-		cout << "Ok." << endl;	
+		debug_out << "Ok." << endl;	
 	}else{
-		cout << "Fail (" << dec << ret << ")! " << endl;
+		debug_out << "Fail (" << dec << ret << ")! " << endl;
 	}
 	return ret;
 }
@@ -196,8 +196,8 @@ int CUTestOpcode::Test_JMP(u8 opcode, u8 toHB, u8 toLB, char* info){
 
 	x, y, p = 0; //clear registers
 	sp = 0x1FF; //set stack pointer
-	cout << setfill('0') << uppercase;
-	cout <<  __FUNCTION__ << " - 0x" << setw(2) << hex << (int)opcode << ", " << info << " : ";
+	debug_out << setfill('0') << uppercase;
+	debug_out <<  __FUNCTION__ << " - 0x" << setw(2) << hex << (int)opcode << ", " << info << " : ";
 
 	srand((unsigned)time(0)); 
 
@@ -240,9 +240,9 @@ int CUTestOpcode::Test_JMP(u8 opcode, u8 toHB, u8 toLB, char* info){
 	
 JMP_EXIT:
 	if(ret == 0){
-		cout << "Ok." << endl;	
+		debug_out << "Ok." << endl;	
 	}else{
-		cout << "Fail (" << dec << ret << ")! " << endl;
+		debug_out << "Fail (" << dec << ret << ")! " << endl;
 	}
 	return ret;
 }
@@ -259,8 +259,8 @@ int CUTestOpcode::Test_SBC(u8 opcode, u8 A, u8 M, u8 C, u8 resA, u8 resP, char* 
 
 	x, y, p = 0; //clear registers
 	sp = 0x1FF; //set stack pointer
-	cout << setfill('0') << uppercase;
-	cout <<  __FUNCTION__ << " - 0x" << setw(2) << hex << (int)opcode << ", " << info << " : ";
+	debug_out << setfill('0') << uppercase;
+	debug_out <<  __FUNCTION__ << " - 0x" << setw(2) << hex << (int)opcode << ", " << info << " : ";
 	
 	a = A;
 
@@ -342,9 +342,9 @@ int CUTestOpcode::Test_SBC(u8 opcode, u8 A, u8 M, u8 C, u8 resA, u8 resP, char* 
 
 SBC_EXIT:
 	if(ret == 0){
-		cout << "Ok." << endl;	
+		debug_out << "Ok." << endl;	
 	}else{
-		cout << "Fail (" << dec << ret << ")! " << endl;
+		debug_out << "Fail (" << dec << ret << ")! " << endl;
 	}
 	return ret;
 }
@@ -360,7 +360,7 @@ int CUTestOpcode::StartTest(){
 	 
 	//T1
 	ret = 0;
-	cout << endl;
+	debug_out << endl;
 	////Opcode, A, M, C, Info
 	ret = ret + Test_ADC(0x69, 0x10, 0x20, 0, "Immediate Adressing - Test 1.1.1"); 
 	ret = ret + Test_ADC(0x69, 0xF0, 0x20, 0, "Immediate Adressing - Test 1.1.2"); 
@@ -369,7 +369,7 @@ int CUTestOpcode::StartTest(){
 	ret = ret + Test_ADC(0x69, 0x00, 0x00, 0, "Immediate Adressing - Test 1.1.5"); 
 	ret = ret + Test_ADC(0x69, 5, (u8)-20, 0, "Immediate Adressing - Test 1.1.6"); 
 	//T2
-	cout << endl;
+	debug_out << endl;
 	ret = ret + Test_ADC(0x65, 0x10, 0x20, 0, "Zero Page Adressing - Test 1.2.1"); 
 	ret = ret + Test_ADC(0x65, 0xF0, 0x20, 0, "Zero Page Adressing - Test 1.2.2"); 
 	ret = ret + Test_ADC(0x65, 0xF0, 0x20, 1, "Zero Page Adressing - Test 1.2.3"); 
@@ -377,7 +377,7 @@ int CUTestOpcode::StartTest(){
 	ret = ret + Test_ADC(0x65, 0x00, 0x00, 0, "Zero Page Adressing - Test 1.2.5"); 
 	ret = ret + Test_ADC(0x65, 35, (u8)-20, 0, "Zero Page Adressing - Test 1.2.6"); 
 	//T3
-	cout << endl;
+	debug_out << endl;
 	ret = ret + Test_ADC(0x75, 0x40, 0x20, 0, "Zero Page, X Adressing - Test 1.3.1"); 
 	ret = ret + Test_ADC(0x75, 0xF0, 0x20, 0, "Zero Page, X Adressing - Test 1.3.2"); 
 	ret = ret + Test_ADC(0x75, 0xF0, 0x20, 1, "Zero Page, X Adressing - Test 1.3.3"); 
@@ -385,7 +385,7 @@ int CUTestOpcode::StartTest(){
 	ret = ret + Test_ADC(0x75, 0x00, 0x00, 0, "Zero Page, X Adressing - Test 1.3.5"); 
 	ret = ret + Test_ADC(0x75, (u8)-6, (u8)-122, 0, "Zero Page, X Adressing - Test 1.3.6"); 
 	//T4
-	cout << endl;
+	debug_out << endl;
 	ret = ret + Test_ADC(0x6D, 0x15, 0x20, 0, "Absolute Adressing - Test 1.4.1"); 
 	ret = ret + Test_ADC(0x6D, 0xF0, 0x20, 0, "Absolute Adressing - Test 1.4.2"); 
 	ret = ret + Test_ADC(0x6D, 0xF0, 0x20, 1, "Absolute Adressing - Test 1.4.3"); 
@@ -394,28 +394,28 @@ int CUTestOpcode::StartTest(){
 	ret = ret + Test_ADC(0x6D, 0x00, 0x00, 0, "Absolute Adressing - Test 1.4.5"); 
 	ret = ret + Test_ADC(0x6D, (u8)-7, (u8)-122, 1, "Absolute Adressing - Test 1.4.6"); 
 	//T5
-	cout << endl;
+	debug_out << endl;
 	ret = ret + Test_ADC(0x7D, 0x15, 0x20, 0, "Absolute Adressing, X - Test 1.5.1"); 
 	ret = ret + Test_ADC(0x7D, 0xF0, 0x20, 0, "Absolute Adressing, X - Test 1.5.2"); 
 	ret = ret + Test_ADC(0x7D, 0xF0, 0x20, 1, "Absolute Adressing, X - Test 1.5.3"); 
 	ret = ret + Test_ADC(0x7D, 0xF0, 0xE0, 1, "Absolute Adressing, X - Test 1.5.4"); 
 	ret = ret + Test_ADC(0x7D, 0x00, 0x00, 0, "Absolute Adressing, X - Test 1.5.5"); 
 	//T5
-	cout << endl;
+	debug_out << endl;
 	ret = ret + Test_ADC(0x79, 0x15, 0x20, 0, "Absolute Adressing, Y - Test 1"); 
 	ret = ret + Test_ADC(0x79, 0xF0, 0x20, 0, "Absolute Adressing, Y - Test 2"); 
 	ret = ret + Test_ADC(0x79, 0xF0, 0x20, 1, "Absolute Adressing, Y - Test 3"); 
 	ret = ret + Test_ADC(0x79, 0xF0, 0xE0, 1, "Absolute Adressing, Y - Test 4"); 
 	ret = ret + Test_ADC(0x79, 0x00, 0x00, 0, "Absolute Adressing, Y - Test 5"); 
 	//T6
-	cout << endl;
+	debug_out << endl;
 	ret = ret + Test_ADC(0x61, 0x15, 0x20, 0, "(Indirect, X) Adressing - Test 1"); 
 	ret = ret + Test_ADC(0x61, 0xF0, 0x20, 0, "(Indirect, X) Adressing - Test 2"); 
 	ret = ret + Test_ADC(0x61, 0xF0, 0x20, 1, "(Indirect, X) Adressing - Test 3"); 
 	ret = ret + Test_ADC(0x61, 0xF0, 0xE0, 1, "(Indirect, X) Adressing - Test 4"); 
 	ret = ret + Test_ADC(0x61, 0x00, 0x00, 0, "(Indirect, X) Adressing - Test 5"); 
 	//T7
-	cout << endl;
+	debug_out << endl;
 	ret = ret + Test_ADC(0x71, 0x15, 0x20, 0, "(Indirect), Y Adressing - Test 1"); 
 	ret = ret + Test_ADC(0x71, 0xF0, 0x20, 0, "(Indirect), Y Adressing - Test 2"); 
 	ret = ret + Test_ADC(0x71, 0xF0, 0x20, 1, "(Indirect), Y Adressing - Test 3"); 
@@ -428,12 +428,12 @@ int CUTestOpcode::StartTest(){
 	 */
 	
 	//Test_JMP(u8 opcode, u8 toHB, u8 toLB, char* info);
-	cout << endl;
+	debug_out << endl;
 	ret = ret + Test_JMP(0x4C, 0x36, 0x25, "Absolute - Test 1"); 
 	ret = ret + Test_JMP(0x4C, 0xFF, 0x00, "Absolute - Test 2"); 
 	ret = ret + Test_JMP(0x4C, 0x00, 0xFF, "Absolute - Test 3"); 
 
-	cout << endl;
+	debug_out << endl;
 	ret = ret + Test_JMP(0x6C, 0x36, 0x25, "Indirect - Test 1"); 
 	ret = ret + Test_JMP(0x6C, 0xFF, 0x00, "Indirect - Test 2"); 
 	ret = ret + Test_JMP(0x6C, 0x00, 0xFF, "Indirect - Test 3"); 
@@ -442,7 +442,7 @@ int CUTestOpcode::StartTest(){
 	/* 
 	 * SBC - Subtract with Carry 
 	 */
-	cout << endl;
+	debug_out << endl;
 	////Opcode, A, M, C, resA, resP, Info
 	ret = ret + Test_SBC(0xE9, 5, 3, 1, 2, 0x01, "Immediate Adressing - Test 1"); 
 	ret = ret + Test_SBC(0xE9, 160, 8, 1, 152, 0x0, "Immediate Adressing - Test 2"); 
@@ -450,9 +450,9 @@ int CUTestOpcode::StartTest(){
 
 
 	if(ret == 0){
-		cout << endl << endl << "All Tests Successful." << endl;
+		debug_out << endl << endl << "All Tests Successful." << endl;
 	}else{
-		cout << endl << endl << "Tests finished with errors!" << endl;
+		debug_out << endl << endl << "Tests finished with errors!" << endl;
 	}
 			
 	return 0;

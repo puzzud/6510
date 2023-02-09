@@ -41,7 +41,7 @@ u8 CMOS6581::Peek(u16 address){
 			// this register.
 			/*
 			if((voice3ControlRegister & 0x80) == 0){
-				cout << "SID RNG peeked without noise waveform" << endl;
+				debug_out << "SID RNG peeked without noise waveform" << endl;
 			}
 			*/
 

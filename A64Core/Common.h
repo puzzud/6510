@@ -14,10 +14,21 @@
 
 #include <string.h>
 #include <iostream>
+#include <ostream>
 #include <iomanip>
 #include "bkegen.h"
 
 using namespace std;
 
-	
+class CDebugOutStream : public std::ostream {
+public:
+    CDebugOutStream() : std::ostream(nullptr) {
+#ifdef DEBUG
+        rdbuf(cout.rdbuf());
+#endif
+    }
+};
+
+extern CDebugOutStream debug_out;
+
 #endif

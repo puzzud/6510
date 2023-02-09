@@ -109,7 +109,7 @@ int CMOS6510Debug::GetTraceLine(u16* pc, u8* opcode, u8* a, u8* x, u8* y, u8* sp
 	mBuf[44] = 0;
 	
 //	#ifdef DEBUG_TRACE_OPCODE
-		cout <<  mBuf << " :: " ;
+		debug_out <<  mBuf << " :: " ;
 //	#endif
 
 	// 0         1         2         3         4

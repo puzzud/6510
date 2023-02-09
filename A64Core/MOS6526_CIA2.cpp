@@ -32,7 +32,7 @@ void CMOS6526CIA2::Cycle(){
 
 u8 CMOS6526CIA2::Peek(u16 address){
 	if(address > 0xDD0F){
-		cout << "CMOS6526CIA2::Peek: Bad address without mirroring: " << std::hex << address << endl;
+		debug_out << "CMOS6526CIA2::Peek: Bad address without mirroring: " << std::hex << address << endl;
 		return 0xFF;
 	}
 
@@ -42,7 +42,7 @@ u8 CMOS6526CIA2::Peek(u16 address){
 
 int CMOS6526CIA2::Poke(u16 address, u8 val){
 	if(address > 0xDD0F){
-		cout << "CMOS6526CIA2::Peek: Bad address without mirroring: " << std::hex << address << endl;
+		debug_out << "CMOS6526CIA2::Peek: Bad address without mirroring: " << std::hex << address << endl;
 		return -1;
 	}
 

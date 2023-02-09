@@ -22,10 +22,10 @@ extern char _binary_KERNAL_ROM_end[];
 
 CKernalRom::CKernalRom():CRom(KERNALROMSIZE){
 #ifdef EMBEDDED_ROMS
-    std::cout << "adding embedded rom" << std::endl;
+    debug_out << "adding embedded rom" << std::endl;
     int len = (uint64_t)(&_binary_KERNAL_ROM_end) - (uint64_t)(&_binary_KERNAL_ROM_start);
     if (KERNALROMSIZE != len) {
-        std::cout << "kernal rom error... embedded len: " << len << " expect: " << KERNALROMSIZE << std::endl;
+        debug_out << "kernal rom error... embedded len: " << len << " expect: " << KERNALROMSIZE << std::endl;
         exit(-1);
     }
     memcpy(mRom, _binary_KERNAL_ROM_start, KERNALROMSIZE);

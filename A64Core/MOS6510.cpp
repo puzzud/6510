@@ -464,7 +464,7 @@ int CMOS6510::Cycle() {
 		}else{
 			cout << "Illegal Opcode Error. Exit Emulator." << endl;
 			DBGTraceLine(cmd, prevPC);
-			cout << "Opcode = 0x" << hex << setfill('0') << setw(2)  << (int)cmd << ", address = 0x" << setw(4) << r_pc << endl;
+			debug_out << "Opcode = 0x" << hex << setfill('0') << setw(2)  << (int)cmd << ", address = 0x" << setw(4) << r_pc << endl;
 			CUtil::HexDumpMemory(mMemory, r_pc , 64);
 			exit(-1);
 		}
@@ -493,7 +493,7 @@ int CMOS6510::Cycle() {
 				
 			//MIPS
 			/*if(timeNow - startMips >= 5000000){
-				//cout << "mips (*1000) = " << dec << (mips / 1000) / 5 << endl;
+				//debug_out << "mips (*1000) = " << dec << (mips / 1000) / 5 << endl;
 				mips = 0;
 				startMips = timeNow;
 			}*/
@@ -508,31 +508,31 @@ void CMOS6510::DBGTraceLine(u8 cmd, u16 prevPC){
 		#ifdef DEBUG_CONSISTENCY_CHECK	
 			static u16 dbgPc;
 			static u8 dbgOp, dbgA, dbgX, dbgY, dbgSp, dbgP;
-			cout << setfill('0') << setw(4) << hex << mOpCnt << "; ";
+			debug_out << setfill('0') << setw(4) << hex << mOpCnt << "; ";
  
 			mOpcodeDebug->GetTraceLine(&dbgPc, &dbgOp, &dbgA, &dbgX, &dbgY, &dbgSp, &dbgP);
 		#endif
 		
 		#ifdef DEBUG_TRACE_OPCODE
 		
-			cout << setfill('0') << setw(4) << hex << prevPC ;
-			cout << " " << mOpcodes[cmd].assembly << " ";
+			debug_out << setfill('0') << setw(4) << hex << prevPC ;
+			debug_out << " " << mOpcodes[cmd].assembly << " ";
 			if(mOpcodes[cmd].matrixID != ILLEGAL_OPC){
 				PrintOperands(mOpcodes[cmd].addressMode, prevPC);
 			}
-			cout << " - 0x" << setw(2) << setfill('0') << hex << (int)cmd;
-			cout << ", Next PC=0x" << setw(2) << setfill('0') << hex << (int)r_pc;
-			cout << ", SP=0x" << setw(2) << setfill('0') << hex << (int)r_sp;
-			cout << ": A=0x" << setw(2) << hex << (int)r_a << ", X=0x" << setw(2) << (int)r_x << ", Y=0x" << setw(2)<< (int)r_y; 
-			cout << ", P=";
+			debug_out << " - 0x" << setw(2) << setfill('0') << hex << (int)cmd;
+			debug_out << ", Next PC=0x" << setw(2) << setfill('0') << hex << (int)r_pc;
+			debug_out << ", SP=0x" << setw(2) << setfill('0') << hex << (int)r_sp;
+			debug_out << ": A=0x" << setw(2) << hex << (int)r_a << ", X=0x" << setw(2) << (int)r_x << ", Y=0x" << setw(2)<< (int)r_y; 
+			debug_out << ", P=";
 			PrintStatusBits();
-			cout << " (" << mOpcodes[cmd].info << ")";
-			cout << endl;
+			debug_out << " (" << mOpcodes[cmd].info << ")";
+			debug_out << endl;
 		#endif //DEBUG_TRACE_OPCODE
 	
 		#ifdef DEBUG_CONSISTENCY_CHECK	
 		if(prevPC != dbgPc || cmd != dbgOp || r_a != dbgA || r_x != dbgX || r_y != dbgY || r_p != dbgP){
-			cout << "inconsistent!!!!!" << endl;
+			debug_out << "inconsistent!!!!!" << endl;
 			exit(-1);
 		}
 		#endif
@@ -573,7 +573,7 @@ bool CMOS6510::GetOperandAddress(u8 addressMode, u16* address, bool* crossesPage
 		case ADDRESS_MODE_IMPLIED:	
 		case ADDRESS_MODE_ACCUMULATOR:
 			*address = 0; //Should not happen
-			cout << "Warning: ADDRESS_MODE_IMPLIED | ADDRESS_MODE_ACCUMULATOR, GetOperandAddress should not be called." << endl;
+			debug_out << "Warning: ADDRESS_MODE_IMPLIED | ADDRESS_MODE_ACCUMULATOR, GetOperandAddress should not be called." << endl;
 		case ADDRESS_MODE_IMMEDIATE:   //imm = #$00 ; (Immediate)
 			*address = r_pc;
 			r_pc = r_pc + 1;
@@ -634,12 +634,12 @@ bool CMOS6510::GetOperandAddress(u8 addressMode, u16* address, bool* crossesPage
 			r_pc = r_pc + 1;
 			break;	
 		default:
-			cout << "Unknown address mode error : " << dec << addressMode << endl;
+			debug_out << "Unknown address mode error : " << dec << addressMode << endl;
 			ret = false;
 			break;
 	}
 	
-	//cout << "(0x" << hex << setw(4) << (int)*address << ": 0x" << setw(2) << (int)address[0] << ", 0x" << (int)address[1] << ", 0x" << (int)address[2] << ")";
+	//debug_out << "(0x" << hex << setw(4) << (int)*address << ": 0x" << setw(2) << (int)address[0] << ", 0x" << (int)address[1] << ", 0x" << (int)address[2] << ")";
 
 	
 	return ret;
@@ -700,8 +700,8 @@ bool CMOS6510::DBGRunOneInstruction(u16* pc, u16* sp, u8* a, u8* x, u8* y, u8* p
 		r_pc++; //increment (see: http://www.6502.org/tutorials/6502opcodes.html#PC)
 		(*this.*(mOpcodes[cmd].opcodeFunction))( mOpcodes[cmd].addressMode ); //C++ Function pointers have a weird syntax...
 	}else{
-		cout << "Degug; Illegal Opcode Error." << endl;
-		cout << "Opcode = 0x" << hex << setfill('0') << setw(2)  << (int)cmd << ", address = 0x" << setw(4) << r_pc << endl;
+		debug_out << "Degug; Illegal Opcode Error." << endl;
+		debug_out << "Opcode = 0x" << hex << setfill('0') << setw(2)  << (int)cmd << ", address = 0x" << setw(4) << r_pc << endl;
 		return false;
 	}
 
@@ -1678,7 +1678,7 @@ void CMOS6510::F_ROR(u8 addressmode){
  * RTI - Return from Interrupt
  */
 void CMOS6510::F_RTI(u8 addressmode){
-//cout << "rti" << endl;
+//debug_out << "rti" << endl;
 	r_p = Pop();
 	r_pc = Pop16();
 }
@@ -1768,7 +1768,7 @@ void CMOS6510::F_SEC(u8 addressmode){
  * SED - Set Decimal Flag
  */
 void CMOS6510::F_SED(u8 addressmode){
-cout << "SED" << endl;
+debug_out << "SED" << endl;
 	SETFLAG(FLAG_D);
 }
 
@@ -1949,57 +1949,57 @@ void CMOS6510::PrintOperands(u8 addressMode, u16 pc){
 	switch(addressMode){
 		case ADDRESS_MODE_ACCUMULATOR:
 		case ADDRESS_MODE_IMPLIED:
-			cout << "       ";
+			debug_out << "       ";
 			break;
 		case ADDRESS_MODE_IMMEDIATE:   //imm = #$00 ; (Immediate)
-			cout <<  "#$" << hex << setw(2) << (int)mMemory->Peek(pc+1) << "   ";  
+			debug_out <<  "#$" << hex << setw(2) << (int)mMemory->Peek(pc+1) << "   ";  
 			break;
 		case ADDRESS_MODE_ZEROPAGE:   //zp = $00 ; (Zero Page Absolute)
-			cout <<  "$" << hex << setw(2) << (int)mMemory->Peek(pc+1) << "    ";  
+			debug_out <<  "$" << hex << setw(2) << (int)mMemory->Peek(pc+1) << "    ";  
 			break;
 		case ADDRESS_MODE_ZEROPAGE_X: //zpx = $00,X ; (Zero Page Index)
-			cout <<  "$" << hex << setw(2) << (int)mMemory->Peek(pc+1) << ",X  ";  
+			debug_out <<  "$" << hex << setw(2) << (int)mMemory->Peek(pc+1) << ",X  ";  
 			break;
 		case ADDRESS_MODE_ZEROPAGE_Y: //zpy = $00,Y ; (Zero Page Index)
-			cout <<  "$" << hex << setw(2) << (int)mMemory->Peek(pc+1) << ",Y  ";  
+			debug_out <<  "$" << hex << setw(2) << (int)mMemory->Peek(pc+1) << ",Y  ";  
 			break;
 		case ADDRESS_MODE_INDIRECT_X:  //izx = ($00,X) ; ( Pre Index Indirect)
-			cout <<  "($" << hex << setw(2) << (int)mMemory->Peek(pc+1) << ",X)";  
+			debug_out <<  "($" << hex << setw(2) << (int)mMemory->Peek(pc+1) << ",X)";  
 			break;
 		case ADDRESS_MODE_INDIRECT_Y:  //izy = ($00),Y ; (Post Index Indirect)
-			cout <<  "($" << hex << setw(2) << (int)mMemory->Peek(pc+1) << "),Y";  
+			debug_out <<  "($" << hex << setw(2) << (int)mMemory->Peek(pc+1) << "),Y";  
 			break;
 		case ADDRESS_MODE_ABSOLUTE:  //abs = $0000 ; (Absolute)
-			cout <<  "$" << hex << setw(4) << (int)mMemory->Peek16(pc+1) << "  ";   
+			debug_out <<  "$" << hex << setw(4) << (int)mMemory->Peek16(pc+1) << "  ";   
 			break;			
 		case ADDRESS_MODE_ABSOLUTE_X: //abx = $0000,X ; (Index)
-			cout <<  "$" << hex << setw(4) << (int)mMemory->Peek16(pc+1) << ",X";  
+			debug_out <<  "$" << hex << setw(4) << (int)mMemory->Peek16(pc+1) << ",X";  
 			break;
 		case ADDRESS_MODE_ABSOLUTE_Y: //aby = $0000,Y ; (Index)
-			cout <<  "$" << hex << setw(4) << (int)mMemory->Peek16(pc+1) << ",Y";  
+			debug_out <<  "$" << hex << setw(4) << (int)mMemory->Peek16(pc+1) << ",Y";  
 			break;
 		case ADDRESS_MODE_INDIRECT:// ind = ($0000) ; (Indirect) 
-			cout <<  "($" << hex << setw(4) << (int)mMemory->Peek16(pc+1) << ")";  
+			debug_out <<  "($" << hex << setw(4) << (int)mMemory->Peek16(pc+1) << ")";  
 			break;
 		case ADDRESS_MODE_RELATIVE://rel = $0000 (PC-relative)
-			cout <<  "$" << hex << setw(2) << (int)mMemory->Peek(pc+1) << "~   ";  
+			debug_out <<  "$" << hex << setw(2) << (int)mMemory->Peek(pc+1) << "~   ";  
 			break;	
 		default:
-			cout << "(?)    " ;
+			debug_out << "(?)    " ;
 			break;
 	}
 }
 
 void CMOS6510::PrintStatusBits(){
-	cout << setw(1);
-	cout << ISFLAG(FLAG_N);
-	cout << ISFLAG(FLAG_V);
-	cout << ISFLAG(0x20);
-	cout << ISFLAG(FLAG_B);
-	cout << ISFLAG(FLAG_D);
-	cout << ISFLAG(FLAG_I);
-	cout << ISFLAG(FLAG_Z);
-	cout << ISFLAG(FLAG_C);
+	debug_out << setw(1);
+	debug_out << ISFLAG(FLAG_N);
+	debug_out << ISFLAG(FLAG_V);
+	debug_out << ISFLAG(0x20);
+	debug_out << ISFLAG(FLAG_B);
+	debug_out << ISFLAG(FLAG_D);
+	debug_out << ISFLAG(FLAG_I);
+	debug_out << ISFLAG(FLAG_Z);
+	debug_out << ISFLAG(FLAG_C);
 }
 
 

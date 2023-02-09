@@ -142,7 +142,7 @@ int CMOS6526CIA1::Poke(u16 address, u8 val){
 			timerAIrqEnabled = (val & 0x01) == 0;
 		}
 
-		//cout << int(timerAIrqEnabled) << endl;
+		//debug_out << int(timerAIrqEnabled) << endl;
 	}else if(address == 0xDC0E){
 		timerAEnabled = (val & 0x01) != 0;
 		if(timerAEnabled){
