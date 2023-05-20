@@ -234,6 +234,9 @@ public:
 	u8 GetA();
 	u8 GetX();
 	u8 GetY();
+	void SetA(u8);
+	void SetX(u8);
+	void SetY(u8);
 	//PC	
 	u16 GetPC();
 	void SetPC(u16 address);

@@ -661,6 +661,21 @@ u8 CMOS6510::GetY(){
 }
 
 
+void CMOS6510::SetA(u8 val){
+	r_a = val;
+}
+
+
+void CMOS6510::SetX(u8 val){
+	r_x = val;
+}
+
+
+void CMOS6510::SetY(u8 val){
+	r_y = val;
+}
+
+
 u16 CMOS6510::GetPC(){
 	return r_pc;
 }
