@@ -56,7 +56,7 @@ void SDLHWScreen::OnRasterLineCompleted(unsigned int lineNumber){
 	// TODO: Catch & translate border lines & V blank lines.
 	DrawScreenLine(lineNumber);
 
-	if (lineNumber == NTSC_FIELD_LINE_HEIGHT){
+	if (lineNumber == fieldLineHeight){
 		SDL_RenderPresent(Renderer);
 		
 		// Clear render display (avoids artifacts in "border" in SDL window when resized).

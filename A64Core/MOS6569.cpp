@@ -22,6 +22,63 @@ static char CMOS6569TextMap[128] =
                       ' ','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x',
                       'x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x' };
 
+CVICHWScreen::CVICHWScreen(){
+	fieldLineWidth = 0;
+	fieldLineHeight = 0;
+	rasterLine = 0;
+	vic = NULL;
+}
+
+
+void CVICHWScreen::SetVic(CMOS6569* vic){
+	this->vic = vic;
+}
+
+
+void CVICHWScreen::SetVideoFormatStandard(VideoFormatStandard videoFormatStandard){
+	if (videoFormatStandard == NTSC){
+		fieldLineWidth = NTSC_FIELD_LINE_WIDTH;
+		fieldLineHeight = NTSC_FIELD_LINE_HEIGHT;
+	}
+	else if (videoFormatStandard == PAL){
+		fieldLineWidth = PAL_FIELD_LINE_WIDTH;
+		fieldLineHeight = PAL_FIELD_LINE_HEIGHT;
+	}
+	else{
+		cout << "Set Video Format Standard to unknown code: " << videoFormatStandard << endl;
+		SetVideoFormatStandard(NTSC);
+	}
+
+	if (vic != NULL){
+		vic->UpdateCyclesPerFrame();
+	}
+}
+
+
+VideoFormatStandard CVICHWScreen::GetVideoFormatStandard(){
+	return videoFormatStandard;
+}
+
+
+u16 CVICHWScreen::GetFieldLineWidth(){
+	return fieldLineWidth;
+}
+
+
+u16 CVICHWScreen::GetFieldLineHeight(){
+	return fieldLineHeight;
+}
+
+
+unsigned int CVICHWScreen::AdvanceRasterLine(){
+	if (++rasterLine >= fieldLineHeight + 1){
+		rasterLine = 0;
+	}
+
+	return rasterLine;
+}
+
+
 CMOS6569::CMOS6569(){
 	memset(mRegs, 0, sizeof(mRegs));
 	memset(mColorRam, 0, sizeof(mColorRam));
@@ -36,7 +93,8 @@ CMOS6569::CMOS6569(){
 	mBus = CBus::GetInstance(); 
 	mBus->Register(eBusVic, this, 0xD000, 0xD3FF);
 
-	mRenderer = NULL;
+	mRenderer = NULL; // NOTE: Must be initialized before SetVideoFormatStandard
+	SetVideoFormatStandard(NTSC);
 }
 
 void CMOS6569::SetChar(u16 address, u8 c){
@@ -47,8 +105,56 @@ u8 CMOS6569::GetDeviceID(){
 	return eBusVic;
 }
 
+
+VideoFormatStandard CMOS6569::GetVideoFormatStandard()
+{
+	return videoFormatStandard;
+}
+
+
+void CMOS6569::SetVideoFormatStandard(VideoFormatStandard videoFormatStandard)
+{
+	// NOTE: 6569 could not be switched to NTSC.
+	// TODO: Ideally should have both 6567 and 6569 with these subtle differences,
+	// without the setter.
+	// And then require CBM64Main to be configured as intended.
+	// But for the time being, this switchable behavior is easiest to implement
+	// and manage.
+
+	this->videoFormatStandard = videoFormatStandard;
+	if ((videoFormatStandard != NTSC) && (videoFormatStandard != PAL)){
+		cout << "Set Video Format Standard to unknown code: " << videoFormatStandard << endl;
+		SetVideoFormatStandard(NTSC);
+	}
+	else{
+		UpdateCyclesPerFrame();
+	}
+}
+
+
+u16 CMOS6569::GetCyclesPerFrame(){
+	return cyclesPerFrame;
+}
+
+
+void CMOS6569::UpdateCyclesPerFrame(){
+	if (mRenderer != NULL){
+		// NTSC: 65
+		// PAL: 63
+		fieldCyclesPerLine = mRenderer->GetFieldLineWidth() / PIXELS_PER_CYCLE;
+
+		// NTSC: 1023000
+		cyclesPerFrame = fieldCyclesPerLine * mRenderer->GetFieldLineHeight();
+	}
+	else{
+		fieldCyclesPerLine = 0;
+		cyclesPerFrame = 0;
+	}
+}
+
+
 void CMOS6569::Cycle(){
-	if (++perLineClockCycle == NTSC_FIELD_CYCLES_PER_LINE){
+	if (++perLineClockCycle >= fieldCyclesPerLine){
 		perLineClockCycle = 0;
 
 		RenderFieldLinePixelColorBuffers(); // Must be called before TestSpriteCollision.
@@ -56,14 +162,10 @@ void CMOS6569::Cycle(){
 
 		if (mRenderer != NULL){
 			mRenderer->OnRasterLineCompleted((unsigned int)rasterLine);
-		}
-
-		if (++rasterLine == NTSC_FIELD_LINE_HEIGHT + 1){
-			rasterLine = 0;
-		}
-		
-		if (rasterLine == rasterLineCompare){
-			mRegs[0xD019 - 0xD000] |= 0x81; // Mark possible interrupt flags.
+			rasterLine = mRenderer->AdvanceRasterLine();
+			if (rasterLine == rasterLineCompare){
+				mRegs[0xD019 - 0xD000] |= 0x81; // Mark possible interrupt flags.
+			}
 		}
 	}
 
@@ -359,6 +461,8 @@ void CMOS6569::RegisterHWScreen(CVICHWScreen* screen){
 	if (screen != NULL){
 		screen->SetVic(this);
 	}
+
+	UpdateCyclesPerFrame();
 }
 
 

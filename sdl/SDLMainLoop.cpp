@@ -99,15 +99,14 @@ inline void MainLoopIteration(void){
 
 
 void Process(void){
-	//1023000 // NTSC
-	static const int cyclesInFrame = NTSC_FIELD_CYCLES_PER_LINE * NTSC_FIELD_LINE_HEIGHT;
+	auto vic = cbm64->GetVic();
 
 	int cycles = remainingCycles;
 
 	while (true){
 		cycles += cbm64->Cycle();
-		if (cycles >= cyclesInFrame){
-			remainingCycles = cycles - cyclesInFrame;
+		if (cycles >= vic->GetCyclesPerFrame()){
+			remainingCycles = cycles - vic->GetCyclesPerFrame();
 			break;
 		}
 	}

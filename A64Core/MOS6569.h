@@ -16,14 +16,6 @@
 #include "Device.h"
 #include "Bus.h"
 
-#define NTSC_FIELD_CYCLES_PER_LINE           65
-#define NTSC_FIELD_LINE_WIDTH                520 /* NTSC_FIELD_CYCLES_PER_LINE * PIXELS_PER_CYCLE */
-#define NTSC_FIELD_LINE_HEIGHT               263
-
-#define PAL_FIELD_CYCLES_PER_LINE            63
-#define PAL_FIELD_LINE_WIDTH                 504 /* PAL_FIELD_CYCLES_PER_LINE * PIXELS_PER_CYCLE */
-#define PAL_FIELD_LINE_HEIGHT                312
-
 #define CHARACTER_MEMORY_BANK_SIZE           0x0800
 #define SCREEN_MEMORY_BANK_SIZE              0x0400
 
@@ -38,7 +30,14 @@
 #define SCREEN_CHAR_HEIGHT                   (SCREEN_HEIGHT / CHARACTER_HEIGHT)
 
 #define PIXELS_PER_CYCLE                     8
-#define SCREEN_CYCLES_PER_LINE               SCREEN_CHAR_WIDTH
+
+#define NTSC_FIELD_LINE_WIDTH                520
+#define NTSC_FIELD_LINE_HEIGHT               263
+//#define NTSC_FIELD_CYCLES_PER_LINE         NTSC_FIELD_LINE_WIDTH / PIXELS_PER_CYCLE /* 65 */
+
+#define PAL_FIELD_LINE_WIDTH                 504
+#define PAL_FIELD_LINE_HEIGHT                312
+//#define PAL_FIELD_CYCLES_PER_LINE          PAL_FIELD_LINE_WIDTH / PIXELS_PER_CYCLE /* 63 */
 
 #define NUMBER_OF_HARDWARE_SPRITES           8
 #define HARDWARE_SPRITE_WIDTH                24
@@ -49,6 +48,13 @@
 #define HARDWARE_SPRITE_DATA_BLOCK_SIZE      (HARDWARE_SPRITE_BYTE_COUNT + 1) /* 64 */
 #define HARDWARE_SPRITE_TO_SCREEN_X_OFFSET   24
 #define HARDWARE_SPRITE_TO_SCREEN_Y_OFFSET   50
+
+
+typedef enum
+{
+	NTSC,
+	PAL
+} VideoFormatStandard;
 
 
 typedef enum
@@ -84,14 +90,25 @@ class CMOS6569;
 
 class CVICHWScreen{
 public:
-		CVICHWScreen(){
-			vic = NULL;
-		}
-		void SetVic(CMOS6569* vic){this->vic = vic;}
+		CVICHWScreen();
+		void SetVic(CMOS6569* vic);
+		void SetVideoFormatStandard(VideoFormatStandard videoFormatStandard);
+
+		VideoFormatStandard GetVideoFormatStandard();
+		u16 GetFieldLineWidth();
+		u16 GetFieldLineHeight();
+
+		unsigned int AdvanceRasterLine();
+
 		virtual void OnRasterLineCompleted(unsigned int lineNumber){};
 		virtual void DrawChar(u16 address, u8 c)  = 0;
 		virtual void DrawChars(u8* memory) = 0;
 protected:
+		VideoFormatStandard videoFormatStandard;
+		u16 fieldLineWidth;
+		u16 fieldLineHeight;
+		unsigned int rasterLine;
+
 		CMOS6569* vic;
 };
 
@@ -108,6 +125,10 @@ class CMOS6569 : public CDevice{
 		u8 perLineClockCycle;
 
 		u16 rasterLineCompare = 0;
+
+		VideoFormatStandard videoFormatStandard;
+		u8 fieldCyclesPerLine;
+		unsigned int cyclesPerFrame;
 
 		CBus* mBus;
 		CVICHWScreen* mRenderer;
@@ -137,6 +158,11 @@ class CMOS6569 : public CDevice{
 		CMOS6569();
 		virtual ~CMOS6569(){}
 		u8 GetDeviceID();
+
+		VideoFormatStandard GetVideoFormatStandard();
+		void SetVideoFormatStandard(VideoFormatStandard videoFormatStandard);
+		u16 GetCyclesPerFrame();
+		void UpdateCyclesPerFrame();
 
         void Cycle();
 
