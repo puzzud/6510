@@ -36,17 +36,17 @@ void CVICHWScreen::SetVic(CMOS6569* vic){
 
 
 void CVICHWScreen::SetVideoFormatStandard(VideoFormatStandard videoFormatStandard){
-	if (videoFormatStandard == NTSC){
+	if (videoFormatStandard == VIDEO_FORMAT_STANDARD_NTSC){
 		fieldLineWidth = NTSC_FIELD_LINE_WIDTH;
 		fieldLineHeight = NTSC_FIELD_LINE_HEIGHT;
 	}
-	else if (videoFormatStandard == PAL){
+	else if (videoFormatStandard == VIDEO_FORMAT_STANDARD_PAL){
 		fieldLineWidth = PAL_FIELD_LINE_WIDTH;
 		fieldLineHeight = PAL_FIELD_LINE_HEIGHT;
 	}
 	else{
 		cout << "Set Video Format Standard to unknown code: " << videoFormatStandard << endl;
-		SetVideoFormatStandard(NTSC);
+		SetVideoFormatStandard(VIDEO_FORMAT_STANDARD_NTSC);
 	}
 
 	if (vic != NULL){
@@ -94,7 +94,7 @@ CMOS6569::CMOS6569(){
 	mBus->Register(eBusVic, this, 0xD000, 0xD3FF);
 
 	mRenderer = NULL; // NOTE: Must be initialized before SetVideoFormatStandard
-	SetVideoFormatStandard(NTSC);
+	SetVideoFormatStandard(VIDEO_FORMAT_STANDARD_NTSC);
 }
 
 void CMOS6569::SetChar(u16 address, u8 c){
@@ -122,9 +122,9 @@ void CMOS6569::SetVideoFormatStandard(VideoFormatStandard videoFormatStandard)
 	// and manage.
 
 	this->videoFormatStandard = videoFormatStandard;
-	if ((videoFormatStandard != NTSC) && (videoFormatStandard != PAL)){
+	if ((videoFormatStandard != VIDEO_FORMAT_STANDARD_NTSC) && (videoFormatStandard != VIDEO_FORMAT_STANDARD_PAL)){
 		cout << "Set Video Format Standard to unknown code: " << videoFormatStandard << endl;
-		SetVideoFormatStandard(NTSC);
+		SetVideoFormatStandard(VIDEO_FORMAT_STANDARD_NTSC);
 	}
 	else{
 		UpdateCyclesPerFrame();

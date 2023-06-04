@@ -52,8 +52,9 @@
 
 typedef enum
 {
-	NTSC,
-	PAL
+	VIDEO_FORMAT_STANDARD_NONE = -1,
+	VIDEO_FORMAT_STANDARD_NTSC = 0,
+	VIDEO_FORMAT_STANDARD_PAL = 1
 } VideoFormatStandard;
 
 
