@@ -31,7 +31,7 @@ u8 CMOS6581::Peek(u16 address){
 	if(address >= 0xD400 && address <= 0xD41C){
 		// TODO: Implement mirroring.
 		if(address == 0xD41B){
-			//u8 voice3ControlRegister = mRegs[0xD412-0xD400];
+			u8 voice3ControlRegister = mRegs[0xD412-0xD400];
 			
 			// NOTE: When oscillator 3 is not set to a noise waveform,
 			// it's not as random.
@@ -39,13 +39,25 @@ u8 CMOS6581::Peek(u16 address){
 			// on the frquency of oscillator 3 as well.
 			// So, just using rand() is a rough way of implementing
 			// this register.
-			/*
 			if((voice3ControlRegister & 0x80) == 0){
-				debug_out << "SID RNG peeked without noise waveform" << endl;
+				u8 waveForm = voice3ControlRegister >> 4;
+				//debug_out << "SID RNG peeked without noise waveform: " << int(waveForm) << endl;
+				if (waveForm == 0)
+				{
+					return 0;
+				}
+				else
+				{
+					//debug_out << "SID RNG peeked with non-noise waveform: " << int(waveForm) << endl;
+					// NOTE: For now, just return a random number, but it should be based on the period of
+					// whatever waveform(s) is selected and the time since initialization.
+					return (u8)(rand() % 255);
+				}
 			}
-			*/
-
-			return (u8)(rand() % 255);
+			else
+			{
+				return (u8)(rand() % 255);
+			}
 		}	
 
 		return mRegs[address-0xD400];
