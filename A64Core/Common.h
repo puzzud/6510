@@ -12,6 +12,7 @@
 #ifndef COMMON_H
 #define COMMON_H
 
+#include <cstdint>
 #include <string.h>
 #include <iostream>
 #include <ostream>
