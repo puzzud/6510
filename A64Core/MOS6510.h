@@ -241,6 +241,7 @@ public:
 	u16 GetPC();
 	void SetPC(u16 address);
 	//Flags
+	bool GetFlag(u8 f);
 	void SetFlag(u8 f);
 	void ClearFlag(u8 f);
 	//IRQ

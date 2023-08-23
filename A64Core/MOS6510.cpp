@@ -686,6 +686,11 @@ void CMOS6510::SetPC(u16 address){
 }
 
 
+bool CMOS6510::GetFlag(u8 f){
+	return (r_p & f) > 0;
+}
+
+
 void CMOS6510::SetFlag(u8 f){
 	SETFLAG(f);
 }
