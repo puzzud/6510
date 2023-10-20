@@ -1325,10 +1325,13 @@ void CMOS6510::F_JMP(u8 addressmode){
 	u16 address;
 	
 	GetOperandAddress(addressmode, &address);	
+	u16 prevPc = r_pc;
 	r_pc = address;
 
 	if(mWatcher != NULL){
-		mWatcher->CheckJumpWatch(address, eWatcherJump);
+		if(mWatcher->CheckJumpWatch(address, eWatcherJump)){
+			r_pc = prevPc;
+		}
 	}
 }
 
@@ -1348,7 +1351,10 @@ void CMOS6510::F_JSR(u8 addressmode){
 	r_pc = address;
 
 	if(mWatcher != NULL){
-		mWatcher->CheckJumpWatch(address, eWatcherJumpRoutine, &prevPc);
+		if(mWatcher->CheckJumpWatch(address, eWatcherJumpRoutine, &prevPc)){
+			Pop16();
+			r_pc = prevPc;
+		}
 	}
 }
 
