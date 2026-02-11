@@ -15,7 +15,7 @@ set(CMAKE_CXX_STANDARD_LIBRARIES "${CMAKE_CXX_STANDARD_LIBRARIES}")
 set(CMAKE_OSX_ARCHITECTURES "arm64;x86_64")
 set(CMAKE_OSX_DEPLOYMENT_TARGET 10.12)
 else()
-set(CMAKE_CXX_STANDARD_LIBRARIES "-static-libgcc -static-libstdc++ ${CMAKE_CXX_STANDARD_LIBRARIES}")
+set(CMAKE_CXX_STANDARD_LIBRARIES "${CMAKE_CXX_STANDARD_LIBRARIES}")
 endif()
 
 # Options
@@ -109,6 +109,12 @@ endif(SDL)
 add_library(A64Core STATIC
     ${CORE_SRC}
     ${ROMS_COMMAND}
+)
+
+# Hide symbols by default (only export those explicitly marked)
+set_target_properties(A64Core PROPERTIES
+    CXX_VISIBILITY_PRESET hidden
+    VISIBILITY_INLINES_HIDDEN YES
 )
 
 # ROMs
