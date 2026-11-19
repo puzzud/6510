@@ -99,53 +99,22 @@ long GetTickCount();
 
 
 
-#ifndef U8
-	#define U8 unsigned char
-#endif
+// Integer types: typedefs, not macros (a macro would rewrite these names wherever they appear after it, e.g. a
+// member named u32 in another library's header).
+typedef unsigned char U8;
+typedef unsigned short U16;
+typedef unsigned int U32;
 
-#ifndef U16
-	#define U16 unsigned short
-#endif
+typedef unsigned char u8;
+typedef unsigned short u16;
+typedef unsigned int u32;
 
-#ifndef U32
-	#define U32 unsigned int
-#endif
+typedef signed char S8;
+typedef signed short S16;
 
-#ifndef u8
-	#define u8 unsigned char
-#endif
-
-#ifndef u16
-	#define u16 unsigned short
-#endif
-
-#ifndef u32
-	#define u32 unsigned int
-#endif
-
-#ifndef S8
-	#define S8 signed char
-#endif
-
-#ifndef S16
-	#define S16 signed short
-#endif
-
-#ifndef s32
-	#define s32 signed int
-#endif
-
-#ifndef s8
-	#define s8 signed char
-#endif
-
-#ifndef s16
-	#define s16 signed short
-#endif
-
-#ifndef s32
-	#define s32 signed int
-#endif
+typedef signed char s8;
+typedef signed short s16;
+typedef signed int s32;
 
 
 #endif //BKEGEN_H
