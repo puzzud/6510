@@ -2,6 +2,13 @@ cmake_minimum_required(VERSION 3.10.0)
 
 project(cmos6510)
 
+# The build type: Debug or Release (default). CMakePresets.json's debug and release presets build each into its own
+# directory (build/debug, build/release), so they don't overwrite each other. Included by another project
+# (add_subdirectory), its build type is that project's.
+if(NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
+    set(CMAKE_BUILD_TYPE Release CACHE STRING "Debug or Release" FORCE)
+endif()
+
 set(CMAKE_CXX_FLAGS_DEBUG "-fPIC -Wall -g")
 set(CMAKE_CXX_FLAGS_RELEASE "-fPIC -O3")
 set(CMAKE_CXX_FLAGS -pthread)

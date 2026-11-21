@@ -19,16 +19,18 @@ to get the necessary ROMS, run:
 ## Bash
 
 ### Build
+Each build type builds into its own directory (`CMakePresets.json`), so a Debug and a Release build don't overwrite
+each other:
 ```
-cmake -S . -B build -DCMAKE_BUILD_TYPE=Release 
-cd build
-make
+cmake --preset release && cmake --build --preset release   # build/release
+cmake --preset debug && cmake --build --preset debug       # build/debug
 ```
+or `make release` / `make debug` (`make`: release).
 
 ### RUN
 ```
-cd build
-./mos6510
+cd build/release
+./cmos6510
 ```
 
 ## Info
